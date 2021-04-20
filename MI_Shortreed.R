@@ -96,7 +96,7 @@
 ##############################################################################
 #source("CATIE_artificial_impute.r")
 
-load("Artificial_CATIE_Data.Rdata")
+# load("Artificial_CATIE_Data.Rdata")
 
 ## Required imputation libraries
 library(mice)
@@ -117,7 +117,7 @@ Flag_transition_model_impute = TRUE
 
 ### Order variables by amount of missingness within each month;
 ### put the time independent variables first.
-load("Artificial_CATIE_Data.Rdata") ## loads data.frame named CATIE
+# load("Artificial_CATIE_Data.Rdata") ## loads data.frame named CATIE
 
 #Code is weird if there is no missing baseline info 
 #Make one observation in each baseline variable missing so code

@@ -1,3 +1,5 @@
+source("MI_Shortreed.R")
+
 
 main <- function(n, pct_missing, mechanism, n_sims) {
   
