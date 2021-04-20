@@ -45,6 +45,7 @@ ui <- fluidPage(
                          value = 50,
                          min = 2,
                          max = 100),
+            actionButton("simulate", "Simulate!"),
             checkboxGroupInput("metrics",
                                "Which metrics?",
                                metric_list,
@@ -60,6 +61,16 @@ ui <- fluidPage(
 
 # Define server logic required to draw a histogram
 server <- function(input, output) {
+    
+    # Run simulations whenever simulate button is pressed
+    re <- reactive({
+        input$simulate
+        main(
+        n = input$n, 
+        pct_missing = input$pct_missing, 
+        mechanism = input$mechanism, 
+        n_sims = input$n_sims)
+    })
 
     output$test_message <- renderText(
         paste0("You have selected ",
