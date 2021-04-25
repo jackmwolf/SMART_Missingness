@@ -26,11 +26,15 @@ ui <- fluidPage(
     # Sidebar with a slider input for number of bins 
     sidebarLayout(
         sidebarPanel(
-            sliderInput("pct_missing",
-                        "% Missing Data:",
-                        min = 0,
-                        max = 99,
-                        value = 10),
+            # sliderInput("pct_missing",
+            #             "% Missing Data:",
+            #             min = 0,
+            #             max = 99,
+            #             value = 10),
+            radioButtons("pct_missing",
+                         "% Missing Data:",
+                         c("30", "60"),
+                         selected = "30"),
             radioButtons("mechanism",
                          "Missingness Mechanism",
                          c("MCAR", "MAR", "MNAR"),
@@ -65,11 +69,10 @@ server <- function(input, output) {
     # Run simulations whenever simulate button is pressed
     re <- reactive({
         input$simulate
-        main(
-        n = input$n, 
-        pct_missing = input$pct_missing, 
-        mechanism = input$mechanism, 
-        n_sims = input$n_sims)
+        data.frame(t(sapply(1:input$n_sims, main, 
+                            pct_mis = input$pct_missing, 
+                            mis_mec = input$mechanism, 
+                            samp_size = input$n)))
     })
 
     output$test_message <- renderText(
