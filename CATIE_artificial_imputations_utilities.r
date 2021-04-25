@@ -410,10 +410,10 @@ CATIE_impute_PANSS=function( CATIE, cur_visit_id, id_var, END=TRUE,
 
  CATIE_long$PANSSTOT = pan_out$y  
  # make sure in bounds
- if( sum(CATIE_long$PANSSTOT<30) > 0 ){
+ if( sum(CATIE_long$PANSSTOT<30,na.rm = TRUE) > 0 ){
   CATIE_long$PANSSTOT[CATIE_long$PANSSTOT<30] = 30
  }
- if( sum(CATIE_long$PANSSTOT>210) > 0 ){
+ if( sum(CATIE_long$PANSSTOT>210, na.rm=TRUE) > 0 ){
   CATIE_long$PANSSTOT[CATIE_long$PANSSTOT<210] = 210
  }
 
