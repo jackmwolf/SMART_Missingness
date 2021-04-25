@@ -84,6 +84,47 @@ gen.mis.mnar = function(N,dropout.time,psi.s1,psi.s2,psi.s3,dat){
   dat.mi$bEPSMEAN.0=NA
   return(dat.mi)}
 
+#Function to generate MCAR missingness
+gen.mis.mcar = function(N,dropout.time,pr.r1, pr.r2, pr.r3,dat){
+  set.seed(1996)
+  #No treatment assignment
+  pr.r1 <-  .25
+  if(sum(is.na(pr.r1))>0){pr.r1[which(is.na(pr.r1))]=1};summary(pr.r1)
+  mis.s1= rbinom(N,1,pr.r1);sum(mis.s1==1)
+  #Stage 1 + no treatment assignment
+  pr.r2 <-  .1; summary(pr.r2)
+  mis.s2= rbinom(N,1,pr.r2);sum(mis.s2==1)
+  #Stage 2
+  pr.r3 <-  .25;summary(pr.r3)
+  mis.s3= rbinom(N,1,pr.r3);sum(mis.s3==1)
+  
+  #Induce missingness
+  dat.mi=dat;nvar=length(names(dat.mi))
+  switch.i = which(names(dat.mi)=="SWITCH")
+  bmi1.i = which(names(dat.mi)=="BMI.1")
+  bmi2.i = which(names(dat.mi)=="BMI.2")
+  
+  if(dropout.time==1){
+    dat.mi$YRS_PRES[runif(8,1,length(dat.mi$CATIEID))]=NA
+    dat.mi[which(mis.s1==1),c(switch.i:nvar)]=NA
+    dat.mi[which(mis.s2==1),c(switch.i:(bmi1.i-1))]=NA
+    dat.mi[which(mis.s2==1),c(bmi2.i:nvar)]=NA
+    dat.mi[which(mis.s3==1),c(bmi2.i:nvar)]=NA}  
+  if(dropout.time==2){
+    dat.mi$YRS_PRES[runif(8,1,length(dat.mi$CATIEID))]=NA
+    dat.mi[which(mis.s2==1),c(switch.i:bmi1.i-1)]=NA
+    dat.mi[which(mis.s2==1),c(bmi2.i:nvar)]=NA
+    dat.mi[which(mis.s3==1),c(bmi2.i:nvar)]=NA}
+  if(dropout.time==3){
+    dat.mi$YRS_PRES[runif(8,1,length(dat.mi$CATIEID))]=NA
+    dat.mi[which(mis.s3==1),c(bmi2.i:nvar)]=NA}
+  dat.mi$SWITCH[which(dat.mi$SWITCH==1)]="SWITCHED"
+  dat.mi$SWITCH[which(dat.mi$SWITCH==0)]="STAYED"
+  dat.mi$SWITCH=as.factor(dat.mi$SWITCH)
+  dat.mi$bEPSMEAN.0=NA
+  return(dat.mi)}
+
+
 regime.mean=function(trt1,trt2,dat){
   p=.5 #Randomization probability 
   if(trt1=="Quetiapine"){
@@ -137,6 +178,14 @@ main <- function(sims, pct_mis, mis_mech,samp_size) {
       psi.s3 <- c(45,2,-10,6) #BMI,MEDAD,PANSS 
       #Induce missingness
       dat.mis <- gen.mis.mnar(N=samp_size,dropout.time=1,psi.s1=psi.s1,psi.s2 = psi.s2,psi.s3=psi.s3,dat=sim.dat)
+    }
+  
+    if (mis_mech =="MCAR" & pct_mis == 60){
+      dat.mis <- gen.mis.mcar(N=samp_size,dropout.time=1,pr.r1=.25, pr.r2=.1, pr.r3=.25,dat=sim.dat)
+    }
+    
+    if (mis_mech =="MCAR" & pct_mis == 30){
+      dat.mis <- gen.mis.mcar(N=samp_size,dropout.time=1,pr.r1=.15, pr.r2=.05, pr.r3=.15,dat=sim.dat)
     }
     
     #### Perform MI ####
