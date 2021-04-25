@@ -11,7 +11,7 @@ library(shiny)
 library(dplyr)
 load("SMARTdat.rda")
 source("funcs.R")
-true.dat <- setup(t)
+true.dat <- t
 
 
 metric_list <- c("MSE", "Coverage Probability")
