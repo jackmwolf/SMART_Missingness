@@ -9,6 +9,9 @@
 
 library(shiny)
 library(dplyr)
+library(boot)
+library(ggplot2)
+
 load("SMARTdat.rda")
 true.dat <- t
 source("funcs.R")
