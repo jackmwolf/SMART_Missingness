@@ -47,7 +47,7 @@ ui <- fluidPage(
             #             value = 200),
             numericInput("n_sims",
                          "Number of Simulations:",
-                         value = 50,
+                         value = 2,
                          min = 2,
                          max = 100),
             actionButton("simulate", "Simulate!"),
@@ -59,7 +59,8 @@ ui <- fluidPage(
 
         # Show a plot of the generated distribution
         mainPanel(
-           textOutput("test_message")
+           textOutput("test_message"),
+           plotOutput("plot")
         )
     )
 )
@@ -130,6 +131,11 @@ server <- function(input, output) {
         )
         
     })
+    
+    output$plot <- renderPlot(
+        re()$plot
+    )
+
 
     output$test_message <- renderText(
         paste0("You have selected ",
