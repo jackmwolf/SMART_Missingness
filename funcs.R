@@ -84,6 +84,52 @@ gen.mis.mnar = function(N,dropout.time,psi.s1,psi.s2,psi.s3,dat){
   dat.mi$bEPSMEAN.0=NA
   return(dat.mi)}
 
+#Function to generate MAR 
+gen.mis.mar = function(N,dropout.time,psi.s1,psi.s2,psi.s3,dat){
+  set.seed(1996)
+  r1pred = exp(psi.s1[1]+psi.s1[2]*dat$BMI.0+psi.s1[3]*dat$PANSSTOT.0) 
+  r2pred = exp(psi.s2[1]+psi.s2[2]*dat$MEDAD03.1+psi.s2[3]*dat$PANSSTOT.1) 
+  r3pred = exp(psi.s3[1]+psi.s3[2]*dat$BMI.1+ psi.s3[3]*dat$SWITCH+
+                 psi.s3[4]*dat$MEDAD03.1+psi.s3[5]*dat$PANSSTOT.1) 
+  #No treatment assignment
+  pr.r1 <-  r1pred/(r1pred+1) 
+  if(sum(is.na(pr.r1))>0){pr.r1[which(is.na(pr.r1))]=1};summary(pr.r1)
+  mis.s1= rbinom(N,1,pr.r1);sum(mis.s1==1)
+  
+  #Stage 1 + no treatment assignment
+  pr.r2 <-  r2pred/(r2pred+1); summary(pr.r2)
+  mis.s2= rbinom(N,1,pr.r2);sum(mis.s2==1)
+  
+  #Stage 2
+  pr.r3 <-  r3pred/(r3pred+1);summary(pr.r3)
+  mis.s3= rbinom(N,1,pr.r3);sum(mis.s3==1)
+  
+  #Induce missingness
+  dat.mi=dat;nvar=length(names(dat.mi))
+  switch.i = which(names(dat.mi)=="SWITCH")
+  bmi1.i = which(names(dat.mi)=="BMI.1")
+  bmi2.i = which(names(dat.mi)=="BMI.2")
+  
+  if(dropout.time==1){
+    dat.mi$YRS_PRES[runif(8,1,length(dat.mi$CATIEID))]=NA
+    dat.mi[which(mis.s1==1),c(switch.i:nvar)]=NA
+    dat.mi[which(mis.s2==1),c(switch.i:(bmi1.i-1))]=NA
+    dat.mi[which(mis.s2==1),c(bmi2.i:nvar)]=NA
+    dat.mi[which(mis.s3==1),c(bmi2.i:nvar)]=NA}  
+  if(dropout.time==2){
+    dat.mi$YRS_PRES[runif(8,1,length(dat.mi$CATIEID))]=NA
+    dat.mi[which(mis.s2==1),c(switch.i:bmi1.i-1)]=NA
+    dat.mi[which(mis.s2==1),c(bmi2.i:nvar)]=NA
+    dat.mi[which(mis.s3==1),c(bmi2.i:nvar)]=NA}
+  if(dropout.time==3){
+    dat.mi$YRS_PRES[runif(8,1,length(dat.mi$CATIEID))]=NA
+    dat.mi[which(mis.s3==1),c(bmi2.i:nvar)]=NA}
+  dat.mi$SWITCH[which(dat.mi$SWITCH==1)]="SWITCHED"
+  dat.mi$SWITCH[which(dat.mi$SWITCH==0)]="STAYED"
+  dat.mi$SWITCH=as.factor(dat.mi$SWITCH)
+  dat.mi$bEPSMEAN.0=NA
+  return(dat.mi)}
+
 #Function to generate MCAR missingness
 gen.mis.mcar = function(N,dropout.time,pr.r1, pr.r2, pr.r3,dat){
   set.seed(1996)
@@ -180,6 +226,22 @@ main <- function(sims, pct_mis, mis_mech,samp_size) {
       dat.mis <- gen.mis.mnar(N=samp_size,dropout.time=1,psi.s1=psi.s1,psi.s2 = psi.s2,psi.s3=psi.s3,dat=sim.dat)
     }
   
+    if (mis_mech=="MAR" & pct_mis==60){
+      psi.s1 <- c(-6.2,.05,.05) #Intercept, baseline BMI, PANSS
+      psi.s2 <- c(100,-10,5) #Intercept, baseline MEDAD, PANSS.1
+      psi.s3 <- c(20,2,80,-10,6) #Intercept, BMI.1, SWITCH, MEDAD.1, PANSS.1
+      #Induce missingness
+      dat.mis <- gen.mis.mar(N=samp_size,dropout.time=1,psi.s1=psi.s1,psi.s2 = psi.s2,psi.s3=psi.s3,dat=sim.dat)
+    }
+    
+    if (mis_mech=="MAR" & pct_mis==30){
+      psi.s1 <- c(-8,.05,.05) #Intercept, baseline BMI, PANSS
+      psi.s2 <- c(100,-10,5) #Intercept, baseline MEDAD, PANSS.1
+      psi.s3 <- c(20,2,80,-11,6) #Intercept, BMI.1, SWITCH, MEDAD.1, PANSS.1
+      #Induce missingness
+      dat.mis <- gen.mis.mar(N=samp_size,dropout.time=1,psi.s1=psi.s1,psi.s2 = psi.s2,psi.s3=psi.s3,dat=sim.dat)
+    }
+    
     if (mis_mech =="MCAR" & pct_mis == 60){
       dat.mis <- gen.mis.mcar(N=samp_size,dropout.time=1,pr.r1=.25, pr.r2=.1, pr.r3=.25,dat=sim.dat)
     }
