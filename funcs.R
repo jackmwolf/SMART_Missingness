@@ -1,5 +1,5 @@
 ############################################################################
-#User inputs pct_missing, n_sims, n and mechanism
+#User inputs pct_missing, n_sims, n (later for future app) and mechanism
 
 #################### Functions #######################
 # Function to set up data
@@ -323,7 +323,7 @@ main <- function(sims, pct_mis, mis_mech,samp_size) {
 ################################################################################
 
 #Aggregate over n_sims
-sim.res <- data.frame(t(sapply(1:n_sims, main, pct_mis = pct_missing, mis_mec = mechanism, samp_size = n)))
+sim.res <- data.frame(t(sapply(1:n_sims, main, pct_mis = pct_missing, mis_mec = mechanism, samp_size = 1000)))
 
 ########################## Final Results #######################################
 
