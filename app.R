@@ -15,7 +15,7 @@ library(ggplot2)
 source("funcs.R")
 
 
-metric_list <- c("MSE", "Coverage Probability")
+metric_list <- c("Bias", "SE", "MSE")
 
 
 # Define UI for application that draws a histogram
@@ -50,17 +50,17 @@ ui <- fluidPage(
                          value = 2,
                          min = 2,
                          max = 100),
-            actionButton("simulate", "Simulate!"),
-            checkboxGroupInput("metrics",
-                               "Which metrics?",
-                               metric_list,
-                               selected = metric_list)
+            actionButton("simulate", "Simulate!")
+            # checkboxGroupInput("metrics",
+            #                    "Which metrics?",
+            #                    metric_list,
+            #                    selected = metric_list)
         ),
 
         # Show a plot of the generated distribution
         mainPanel(
-           textOutput("test_message"),
-           plotOutput("plot")
+           plotOutput("plot"),
+           tableOutput("table1")
         )
     )
 )
@@ -125,8 +125,8 @@ server <- function(input, output) {
         list(
             bias = bias,
             se = se,
-            cov.probability = cov.probability,
             mse = mse,
+            cov.probability = cov.probability,
             plot = plot
         )
         
@@ -135,17 +135,19 @@ server <- function(input, output) {
     output$plot <- renderPlot(
         re()$plot
     )
-
-
-    output$test_message <- renderText(
-        paste0("You have selected ",
-               input$pct_missing, "% missingness, ",
-               input$mechanism, " as the missingness mechanism, and ",
-               input$n, " for the sample size. ",
-               "To be carried out over ",
-               input$n_sims, " simulations with the following metrics displayed: ",
-               paste0(input$metrics, collapse = ", "), ".")
+    
+    output$table1 <- renderTable(
+        expr = {
+            rbind(re()$bias, re()$se, re()$mse) %>% 
+                `rownames<-`(c("Bias", "SE", "MSE")) %>% 
+                `colnames<-`(paste0("DTR", 1:7))
+        },
+        striped = TRUE,
+        hover = TRUE,
+        rownames = TRUE 
     )
+
+
 }
 
 # Run the application 
