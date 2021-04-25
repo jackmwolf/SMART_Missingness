@@ -39,11 +39,11 @@ ui <- fluidPage(
                          "Missingness Mechanism",
                          c("MCAR", "MAR", "MNAR"),
                          selected = "MAR"),
-            numericInput("n",
-                        "Sample Size:",
-                        min = 100,
-                        max = 1000,
-                        value = 200),
+            # numericInput("n",
+            #             "Sample Size:",
+            #             min = 100,
+            #             max = 1000,
+            #             value = 200),
             numericInput("n_sims",
                          "Number of Simulations:",
                          value = 50,
@@ -72,7 +72,7 @@ server <- function(input, output) {
         data.frame(t(sapply(1:input$n_sims, main, 
                             pct_mis = input$pct_missing, 
                             mis_mec = input$mechanism, 
-                            samp_size = input$n)))
+                            samp_size = 1000)))
     })
 
     output$test_message <- renderText(
