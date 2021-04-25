@@ -230,3 +230,29 @@ for (i in 1:7){
 mse <- round(mse)
 
 
+#Plot
+Regime <- c(rep("DTR1",n_sims),rep("DTR2",n_sims),rep("DTR3",n_sims),
+            rep("DTR4",n_sims),rep("DTR5",n_sims),rep("DTR6",n_sims),
+            rep("DTR7",n_sims))
+
+reg.means <- c(sim.res[,1],sim.res[,2],sim.res[,3],sim.res[,4],sim.res[,5],
+               sim.res[,6],sim.res[,7])
+
+plot.df <- data.frame(Regime, reg.means)
+
+plot = ggplot(plot.df, aes(Regime, reg.means, fill=Regime)) +
+  geom_boxplot() +
+  labs(y = "Expected PANSS score", x="Embedded DTR",
+       title="Comparing embedded DTRs")
+
+#Add the true means to the plot (red dots)
+plot +
+  annotate("point", x = "DTR1", y = true.means[1], colour = "red",size=3)+
+  annotate("point", x = "DTR2", y = true.means[2], colour = "red",size=3)+
+  annotate("point", x = "DTR3", y = true.means[3], colour = "red",size=3)+
+  annotate("point", x = "DTR4", y = true.means[4], colour = "red",size=3)+
+  annotate("point", x = "DTR5", y = true.means[5], colour = "red",size=3)+
+  annotate("point", x = "DTR6", y = true.means[6], colour = "red",size=3)+
+  annotate("point", x = "DTR7", y = true.means[7], colour = "red",size=3)+
+  theme(legend.position = "none")
+
