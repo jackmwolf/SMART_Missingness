@@ -14,7 +14,8 @@ library(ggplot2)
 
 load("SMARTdat.rda")
 true.dat <- t
-true.dat$SWITCH=ifelse(true.dat$SWITCH=="SWITCHED",1,0)
+true.dat$SWITCH=ifelse(true.dat$SWITCH=="SWITCHED",1,0) #if this makes it not work, just take it out. It has something to do with the factors
+#since you can't multiple a coefficient to a factor so something is going on there
 source("funcs.R")
 
 
