@@ -117,10 +117,10 @@ se.mi = function(reg, var){
 true.means <- c(75.79, 75.73, 76.03, 76.06, 78.50, 77.90, 77.23)
 
 #Main function
-main <- function(sims, pct_mis, mis_mech,samp_size) {
+main <- function(sims, pct_mis, mis_mech, samp_size) {
   set.seed(sims)
     # Take a sample of size n from the population
-    sim.dat <- sample_n(true.dat, samp.size, replace = FALSE)
+    sim.dat <- sample_n(true.dat, samp_size, replace = FALSE)
     
     #### Induce missingness depending on pct_missing and missingness mechanism ####
     if (mis_mech=="MNAR" & pct_mis=="60"){
@@ -212,21 +212,21 @@ main <- function(sims, pct_mis, mis_mech,samp_size) {
 ################################################################################
 
 #Aggregate over n_sims
-sim.res <- data.frame(t(sapply(1:n_sims, main, pct_mis = pct_missing, mis_mec = mechanism, samp_size = n)))
+# sim.res <- data.frame(t(sapply(1:n_sims, main, pct_mis = pct_missing, mis_mec = mechanism, samp_size = n)))
 
 ########################## Final Results #######################################
 
-res <- sapply(sim.res, mean)
-names(res)=c("O1","O2","R1","R2","Q1","Q2","Q3","C.O1","C.O2","C.R1","C.R2","C.Q1","C.Q2","C.Q3")
-
-#Metrics send to user
-bias <- res[1:7]-true.means
-se <- sapply(sim.res[1:7],sd)
-cov.probability <- res[8:14]
-mse <- c()
-for (i in 1:7){
-  m <- mean( (sim.res[,i] - true.means[i])^2 )
-  mse <- c(m,mse)}
-mse <- round(mse)
-
-
+# res <- sapply(sim.res, mean)
+# names(res)=c("O1","O2","R1","R2","Q1","Q2","Q3","C.O1","C.O2","C.R1","C.R2","C.Q1","C.Q2","C.Q3")
+# 
+# #Metrics send to user
+# bias <- res[1:7]-true.means
+# se <- sapply(sim.res[1:7],sd)
+# cov.probability <- res[8:14]
+# mse <- c()
+# for (i in 1:7){
+#   m <- mean( (sim.res[,i] - true.means[i])^2 )
+#   mse <- c(m,mse)}
+# mse <- round(mse)
+# 
+# 
