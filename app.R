@@ -12,9 +12,6 @@ library(dplyr)
 library(boot)
 library(ggplot2)
 
-load("SMARTdat.rda")
-true.dat <- t
-true.dat$SWITCH=ifelse(true.dat$SWITCH=="SWITCHED",1,0)
 source("funcs.R")
 
 
@@ -74,10 +71,16 @@ server <- function(input, output) {
     re <- reactive({
         input$simulate
         # Run simulation ----
+        load("SMARTdat.rda")
+        true.dat <- t
+        true.dat$SWITCH=ifelse(true.dat$SWITCH=="SWITCHED",1,0)
+        
         sim.res <- data.frame(t(sapply(1:input$n_sims, main, 
                             pct_mis = input$pct_missing, 
                             mis_mec = input$mechanism, 
-                            samp_size = 1000)))
+                            samp_size = 1000,
+                            true.dat = true.dat)))
+        
         # Compute summary measures ----
         res <- sapply(sim.res, mean)
         names(res)=c("O1","O2","R1","R2","Q1","Q2","Q3","C.O1","C.O2","C.R1","C.R2","C.Q1","C.Q2","C.Q3")
@@ -92,9 +95,9 @@ server <- function(input, output) {
             mse <- c(m,mse)}
         
         #Plot
-        Regime <- c(rep("DTR1",n_sims),rep("DTR2",n_sims),rep("DTR3",n_sims),
-                    rep("DTR4",n_sims),rep("DTR5",n_sims),rep("DTR6",n_sims),
-                    rep("DTR7",n_sims))
+        Regime <- c(rep("DTR1",input$n_sims),rep("DTR2",input$n_sims),rep("DTR3",input$n_sims),
+                    rep("DTR4",input$n_sims),rep("DTR5",input$n_sims),rep("DTR6",input$n_sims),
+                    rep("DTR7",input$n_sims))
         
         reg.means <- c(sim.res[,1],sim.res[,2],sim.res[,3],sim.res[,4],sim.res[,5],
                        sim.res[,6],sim.res[,7])

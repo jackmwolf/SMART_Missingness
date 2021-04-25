@@ -208,7 +208,7 @@ t.regO1 <- 75.79; t.regO2 <- 75.73; t.regR1 <- 76.03; t.regR2 <- 76.06
 t.regQ1 <- 78.50; t.regQ2 <- 77.90; t.regQ3 <- 77.23
 
 #Main function
-main <- function(sims, pct_mis, mis_mech, samp_size) {
+main <- function(sims, pct_mis, mis_mech, samp_size, true.dat) {
   set.seed(sims)
     # Take a sample of size n from the population
     sim.dat <- sample_n(true.dat, samp_size, replace = FALSE)
