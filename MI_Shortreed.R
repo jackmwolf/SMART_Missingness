@@ -65,9 +65,9 @@
 #####		  into the second CATIE treatment stage; thus is structurally
 #####		  missing on individuals who remain on their initial treatment.
 #####  MEDAD03.1, MEDAD03.2: Time-varying CATIE medication adherence 
-#####  		  	     Proportion of study pills taken in the past 
+#####  		  	 Proportion of study pills taken in the past 
 #####			     treatment period. Medication  adherence 
-#####		  	     at baseline is not defined.  
+###            at baseline is not defined.  
 #####  SWITCH: Binary indicator for if individuals chose to transition in to 
 #####  	       second treatment stage at the follow-up visit or remain in 
 #####	       initial treatment. 'STAYED';'SWITCHED'     
@@ -96,7 +96,7 @@
 ##############################################################################
 #source("CATIE_artificial_impute.r")
 
-# load("Artificial_CATIE_Data.Rdata")
+load("Artificial_CATIE_Data.Rdata")
 
 ## Required imputation libraries
 library(mice)
@@ -117,7 +117,7 @@ Flag_transition_model_impute = TRUE
 
 ### Order variables by amount of missingness within each month;
 ### put the time independent variables first.
-# load("Artificial_CATIE_Data.Rdata") ## loads data.frame named CATIE
+load("Artificial_CATIE_Data.Rdata") ## loads data.frame named CATIE
 
 #Code is weird if there is no missing baseline info 
 #Make one observation in each baseline variable missing so code
