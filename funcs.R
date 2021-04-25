@@ -2,7 +2,7 @@
 #User inputs pct_missing, n_sims, n (later for future app) and mechanism
 
 #################### Functions #######################
-# Function to set up data
+# Function to set up data for analysis after imputation
 setup <- function(mi.dat) {
   # Delete P treatment
   d <- mi.dat
