@@ -14,6 +14,7 @@ library(ggplot2)
 
 load("SMARTdat.rda")
 true.dat <- t
+true.dat$SWITCH=ifelse(true.dat$SWITCH=="SWITCHED",1,0)
 source("funcs.R")
 
 
