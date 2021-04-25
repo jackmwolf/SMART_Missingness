@@ -202,6 +202,8 @@ se.mi = function(reg, var){
 
 #True means of population data 
 true.means <- c(75.79, 75.73, 76.03, 76.06, 78.50, 77.90, 77.23)
+t.regO1 <- 75.79; t.regO2 <- 75.73; t.regR1 <- 76.03; t.regR2 <- 76.06 
+t.regQ1 <- 78.50; t.regQ2 <- 77.90; t.regQ3 <- 77.23
 
 #Main function
 main <- function(sims, pct_mis, mis_mech, samp_size) {
