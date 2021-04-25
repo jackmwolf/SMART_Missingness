@@ -1,5 +1,5 @@
 ############################################################################
-#User inputs pct_missing, n_sims, n and mechanism
+#User inputs pct_missing, n_sims, n (later for future app) and mechanism
 
 #################### Functions #######################
 # Function to set up data
@@ -84,6 +84,93 @@ gen.mis.mnar = function(N,dropout.time,psi.s1,psi.s2,psi.s3,dat){
   dat.mi$bEPSMEAN.0=NA
   return(dat.mi)}
 
+#Function to generate MAR 
+gen.mis.mar = function(N,dropout.time,psi.s1,psi.s2,psi.s3,dat){
+  set.seed(1996)
+  r1pred = exp(psi.s1[1]+psi.s1[2]*dat$BMI.0+psi.s1[3]*dat$PANSSTOT.0) 
+  r2pred = exp(psi.s2[1]+psi.s2[2]*dat$MEDAD03.1+psi.s2[3]*dat$PANSSTOT.1) 
+  r3pred = exp(psi.s3[1]+psi.s3[2]*dat$BMI.1+ psi.s3[3]*dat$SWITCH+
+                 psi.s3[4]*dat$MEDAD03.1+psi.s3[5]*dat$PANSSTOT.1) 
+  #No treatment assignment
+  pr.r1 <-  r1pred/(r1pred+1) 
+  if(sum(is.na(pr.r1))>0){pr.r1[which(is.na(pr.r1))]=1};summary(pr.r1)
+  mis.s1= rbinom(N,1,pr.r1);sum(mis.s1==1)
+  
+  #Stage 1 + no treatment assignment
+  pr.r2 <-  r2pred/(r2pred+1); summary(pr.r2)
+  mis.s2= rbinom(N,1,pr.r2);sum(mis.s2==1)
+  
+  #Stage 2
+  pr.r3 <-  r3pred/(r3pred+1);summary(pr.r3)
+  mis.s3= rbinom(N,1,pr.r3);sum(mis.s3==1)
+  
+  #Induce missingness
+  dat.mi=dat;nvar=length(names(dat.mi))
+  switch.i = which(names(dat.mi)=="SWITCH")
+  bmi1.i = which(names(dat.mi)=="BMI.1")
+  bmi2.i = which(names(dat.mi)=="BMI.2")
+  
+  if(dropout.time==1){
+    dat.mi$YRS_PRES[runif(8,1,length(dat.mi$CATIEID))]=NA
+    dat.mi[which(mis.s1==1),c(switch.i:nvar)]=NA
+    dat.mi[which(mis.s2==1),c(switch.i:(bmi1.i-1))]=NA
+    dat.mi[which(mis.s2==1),c(bmi2.i:nvar)]=NA
+    dat.mi[which(mis.s3==1),c(bmi2.i:nvar)]=NA}  
+  if(dropout.time==2){
+    dat.mi$YRS_PRES[runif(8,1,length(dat.mi$CATIEID))]=NA
+    dat.mi[which(mis.s2==1),c(switch.i:bmi1.i-1)]=NA
+    dat.mi[which(mis.s2==1),c(bmi2.i:nvar)]=NA
+    dat.mi[which(mis.s3==1),c(bmi2.i:nvar)]=NA}
+  if(dropout.time==3){
+    dat.mi$YRS_PRES[runif(8,1,length(dat.mi$CATIEID))]=NA
+    dat.mi[which(mis.s3==1),c(bmi2.i:nvar)]=NA}
+  dat.mi$SWITCH[which(dat.mi$SWITCH==1)]="SWITCHED"
+  dat.mi$SWITCH[which(dat.mi$SWITCH==0)]="STAYED"
+  dat.mi$SWITCH=as.factor(dat.mi$SWITCH)
+  dat.mi$bEPSMEAN.0=NA
+  return(dat.mi)}
+
+#Function to generate MCAR missingness
+gen.mis.mcar = function(N,dropout.time,pr.r1, pr.r2, pr.r3,dat){
+  set.seed(1996)
+  #No treatment assignment
+  pr.r1 <-  .25
+  if(sum(is.na(pr.r1))>0){pr.r1[which(is.na(pr.r1))]=1};summary(pr.r1)
+  mis.s1= rbinom(N,1,pr.r1);sum(mis.s1==1)
+  #Stage 1 + no treatment assignment
+  pr.r2 <-  .1; summary(pr.r2)
+  mis.s2= rbinom(N,1,pr.r2);sum(mis.s2==1)
+  #Stage 2
+  pr.r3 <-  .25;summary(pr.r3)
+  mis.s3= rbinom(N,1,pr.r3);sum(mis.s3==1)
+  
+  #Induce missingness
+  dat.mi=dat;nvar=length(names(dat.mi))
+  switch.i = which(names(dat.mi)=="SWITCH")
+  bmi1.i = which(names(dat.mi)=="BMI.1")
+  bmi2.i = which(names(dat.mi)=="BMI.2")
+  
+  if(dropout.time==1){
+    dat.mi$YRS_PRES[runif(8,1,length(dat.mi$CATIEID))]=NA
+    dat.mi[which(mis.s1==1),c(switch.i:nvar)]=NA
+    dat.mi[which(mis.s2==1),c(switch.i:(bmi1.i-1))]=NA
+    dat.mi[which(mis.s2==1),c(bmi2.i:nvar)]=NA
+    dat.mi[which(mis.s3==1),c(bmi2.i:nvar)]=NA}  
+  if(dropout.time==2){
+    dat.mi$YRS_PRES[runif(8,1,length(dat.mi$CATIEID))]=NA
+    dat.mi[which(mis.s2==1),c(switch.i:bmi1.i-1)]=NA
+    dat.mi[which(mis.s2==1),c(bmi2.i:nvar)]=NA
+    dat.mi[which(mis.s3==1),c(bmi2.i:nvar)]=NA}
+  if(dropout.time==3){
+    dat.mi$YRS_PRES[runif(8,1,length(dat.mi$CATIEID))]=NA
+    dat.mi[which(mis.s3==1),c(bmi2.i:nvar)]=NA}
+  dat.mi$SWITCH[which(dat.mi$SWITCH==1)]="SWITCHED"
+  dat.mi$SWITCH[which(dat.mi$SWITCH==0)]="STAYED"
+  dat.mi$SWITCH=as.factor(dat.mi$SWITCH)
+  dat.mi$bEPSMEAN.0=NA
+  return(dat.mi)}
+
+
 regime.mean=function(trt1,trt2,dat){
   p=.5 #Randomization probability 
   if(trt1=="Quetiapine"){
@@ -137,6 +224,30 @@ main <- function(sims, pct_mis, mis_mech, samp_size) {
       psi.s3 <- c(45,2,-10,6) #BMI,MEDAD,PANSS 
       #Induce missingness
       dat.mis <- gen.mis.mnar(N=samp_size,dropout.time=1,psi.s1=psi.s1,psi.s2 = psi.s2,psi.s3=psi.s3,dat=sim.dat)
+    }
+  
+    if (mis_mech=="MAR" & pct_mis==60){
+      psi.s1 <- c(-6.2,.05,.05) #Intercept, baseline BMI, PANSS
+      psi.s2 <- c(100,-10,5) #Intercept, baseline MEDAD, PANSS.1
+      psi.s3 <- c(20,2,80,-10,6) #Intercept, BMI.1, SWITCH, MEDAD.1, PANSS.1
+      #Induce missingness
+      dat.mis <- gen.mis.mar(N=samp_size,dropout.time=1,psi.s1=psi.s1,psi.s2 = psi.s2,psi.s3=psi.s3,dat=sim.dat)
+    }
+    
+    if (mis_mech=="MAR" & pct_mis==30){
+      psi.s1 <- c(-8,.05,.05) #Intercept, baseline BMI, PANSS
+      psi.s2 <- c(100,-10,5) #Intercept, baseline MEDAD, PANSS.1
+      psi.s3 <- c(20,2,80,-11,6) #Intercept, BMI.1, SWITCH, MEDAD.1, PANSS.1
+      #Induce missingness
+      dat.mis <- gen.mis.mar(N=samp_size,dropout.time=1,psi.s1=psi.s1,psi.s2 = psi.s2,psi.s3=psi.s3,dat=sim.dat)
+    }
+    
+    if (mis_mech =="MCAR" & pct_mis == 60){
+      dat.mis <- gen.mis.mcar(N=samp_size,dropout.time=1,pr.r1=.25, pr.r2=.1, pr.r3=.25,dat=sim.dat)
+    }
+    
+    if (mis_mech =="MCAR" & pct_mis == 30){
+      dat.mis <- gen.mis.mcar(N=samp_size,dropout.time=1,pr.r1=.15, pr.r2=.05, pr.r3=.15,dat=sim.dat)
     }
     
     #### Perform MI ####
@@ -212,21 +323,47 @@ main <- function(sims, pct_mis, mis_mech, samp_size) {
 ################################################################################
 
 #Aggregate over n_sims
-# sim.res <- data.frame(t(sapply(1:n_sims, main, pct_mis = pct_missing, mis_mec = mechanism, samp_size = n)))
+sim.res <- data.frame(t(sapply(1:n_sims, main, pct_mis = pct_missing, mis_mec = mechanism, samp_size = 1000)))
 
 ########################## Final Results #######################################
 
-# res <- sapply(sim.res, mean)
-# names(res)=c("O1","O2","R1","R2","Q1","Q2","Q3","C.O1","C.O2","C.R1","C.R2","C.Q1","C.Q2","C.Q3")
-# 
-# #Metrics send to user
-# bias <- res[1:7]-true.means
-# se <- sapply(sim.res[1:7],sd)
-# cov.probability <- res[8:14]
-# mse <- c()
-# for (i in 1:7){
-#   m <- mean( (sim.res[,i] - true.means[i])^2 )
-#   mse <- c(m,mse)}
-# mse <- round(mse)
-# 
-# 
+res <- sapply(sim.res, mean)
+names(res)=c("O1","O2","R1","R2","Q1","Q2","Q3","C.O1","C.O2","C.R1","C.R2","C.Q1","C.Q2","C.Q3")
+
+#Metrics send to user
+bias <- res[1:7]-true.means
+se <- sapply(sim.res[1:7],sd)
+cov.probability <- res[8:14]
+mse <- c()
+for (i in 1:7){
+  m <- mean( (sim.res[,i] - true.means[i])^2 )
+  mse <- c(m,mse)}
+mse <- round(mse)
+
+
+#Plot
+Regime <- c(rep("DTR1",n_sims),rep("DTR2",n_sims),rep("DTR3",n_sims),
+            rep("DTR4",n_sims),rep("DTR5",n_sims),rep("DTR6",n_sims),
+            rep("DTR7",n_sims))
+
+reg.means <- c(sim.res[,1],sim.res[,2],sim.res[,3],sim.res[,4],sim.res[,5],
+               sim.res[,6],sim.res[,7])
+
+plot.df <- data.frame(Regime, reg.means)
+
+plot = ggplot(plot.df, aes(Regime, reg.means, fill=Regime)) +
+  geom_boxplot() +
+  labs(y = "Expected PANSS score", x="Embedded DTR",
+       title="Comparing embedded DTRs")
+
+#Add the true means to the plot (red dots)
+plot +
+  annotate("point", x = "DTR1", y = true.means[1], colour = "red",size=3)+
+  annotate("point", x = "DTR2", y = true.means[2], colour = "red",size=3)+
+  annotate("point", x = "DTR3", y = true.means[3], colour = "red",size=3)+
+  annotate("point", x = "DTR4", y = true.means[4], colour = "red",size=3)+
+  annotate("point", x = "DTR5", y = true.means[5], colour = "red",size=3)+
+  annotate("point", x = "DTR6", y = true.means[6], colour = "red",size=3)+
+  annotate("point", x = "DTR7", y = true.means[7], colour = "red",size=3)+
+  theme(legend.position = "none")
+
