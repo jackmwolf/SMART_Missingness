@@ -1,0 +1,13 @@
+name: SMART_Missingness_Simulator
+title: SMART_Missingness_Simulator
+username:
+account: jackmwolf
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 4030250
+bundleId: 4518609
+url: https://jackmwolf.shinyapps.io/SMART_Missingness_Simulator/
+when: 1619406136.02736
+lastSyncTime: 1619406136.02736
+asMultiple: FALSE
+asStatic: FALSE
