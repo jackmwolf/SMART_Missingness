@@ -43,7 +43,17 @@ ui <- fluidPage(
         min = 2,
         max = 100
       ),
-      actionButton("simulate", "Simulate!")
+      actionButton("simulate", "Simulate!"),
+      h3("How to use this app"),
+      p(
+        "Use the input panel (above) to select
+         your desired missingness mechanism (missing completely at random,
+         missing at random, or missing not at random), percentage of
+         missing data, and the number of simulations to generate. Then,
+         press 'Simulate!' to begin simulations. Once completed (it takes
+         a while to run, be patient!), results will display on the 'Plot'
+         and 'Table' tabs."
+      )
     ),
 
     # Show a plot of the generated distribution
@@ -51,14 +61,6 @@ ui <- fluidPage(
       tabsetPanel(
         tabPanel(
           "About",
-          h3("How to use this app"),
-          p(
-            "Use the input panel on the left-hand side of the screen to select
-             your desired missingness mechanism (missing completely at random,
-             missing at random, or missing not at random), percentage of
-             missing data, and the number of simulations to generate. Then,
-             press 'Simulate!' to begin simulations. Once completed, results
-             will display on the 'Plot' and 'Table' tabs."),
           h3("Background"),
           p(
             "Missing data can compromise the validity of inference,
@@ -81,7 +83,7 @@ ui <- fluidPage(
              affect an analysis in a SMART setting."
           ),
           p(
-            "This Shiny application aims to evaluate the performance of MI under 
+            "This Shiny application aims to evaluate the performance of MI under
              various randomness mechanisms
              and levels of missingness."
           ),
@@ -90,7 +92,48 @@ ui <- fluidPage(
             "We consider a two-stage SMART study with three
              study visits with data that mimics the Clinical
              Antipsychotic Trials of Intervention Effectiveness
-             (CATIE) SMART study for patients with Schizophrenia,"
+             (CATIE) SMART study for patients with Schizophrenia."
+          ),
+          p(
+            "In this study Subjects were randomized to three possible first line
+             treatments: Olanzapine, Risperidone, and Quetiapine (second
+             generation or atypical antipyshcotics). For the second treatment
+             stage, responders will remain on their first line treatment and
+             non-responders will be assigned treatment according to a
+             randomization scheme depending on the reason for non-response
+             (efficacy or tolerability). Both atypical antipsychotics and
+             typical (first generation) antipsychotics are possible second line
+             treatments for non-responders. This gives seven total treatment
+             regimes."
+          ),
+          p(
+            "The study's response of interest is the subject's symptom severity
+             score  (PANSS). A higher score indicates a worsening of symptoms.
+             We will look at the average PANSS score over the three study visits
+             as our response."
+          ),
+          p(
+            "In all scenarios, we assumed monotone missingness. To generate
+             MAR data we let the probability of a patient dropping out at time
+             t be a function of their BMI, years on prescription medication
+             prior to the study, proportion of study pills taken (adherence) in
+             the past treatment stage, and their most recently observed PANSS
+             score. For MNAR data, the probability of dropping out at time t is
+             a function of the complete data. The primary factors that dictate
+             this probability are response status, reason for non-response,
+             BMI,  adherence, and their final (unobserved) PANSS score."
+          ),
+          p(
+            "To control the percentage of missing data, we varied the
+              coefficients in our missing data models such that there was
+              10% or 20% dropout during stage 1, and then an additional
+              10% or 20% dropout at the end of stage 1, during stage 2,
+              and at the end of stage 2, for a total dropout rate of 30% or 60%."
+          ),
+          p(
+            "The multiple imputation procedure was based on a time-ordered
+           nested multiple imputation stategy proposed for SMART studies in
+           Shortreed et al. (2014)."
           ),
           h3("Future Work"),
           p(
@@ -135,8 +178,10 @@ server <- function(input, output) {
 
       # Compute summary measures ----
       res <- sapply(sim.res, mean)
-      names(res) <- c("O1", "O2", "R1", "R2", "Q1", "Q2", "Q3", "C.O1", "C.O2", 
-                      "C.R1", "C.R2", "C.Q1", "C.Q2", "C.Q3")
+      names(res) <- c(
+        "O1", "O2", "R1", "R2", "Q1", "Q2", "Q3", "C.O1", "C.O2",
+        "C.R1", "C.R2", "C.Q1", "C.Q2", "C.Q3"
+      )
 
       # Metrics send to user
       bias <- res[1:7] - true.means
