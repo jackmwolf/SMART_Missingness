@@ -1,0 +1,13 @@
+---
+title: "App Draft"
+author: "Aparajita Sur and Jack Wolf"
+date: "4/25/2021"
+output: pdf_document
+---
+
+Our app allows users to simulate data from a sequential multiple assignment randomized trial (SMART) with varying missingness scenarios and evaluate the performance of multiple imputation in estimating the mean response of a given treatment regime across three study visits.  
+Full details are available within the "About" page of the app.
+
+The app is available through [shinyapps.io](https://www.shinyapps.io/) at
+[jackmwolf.shinyapps.io/SMART_Missingness_Simulator/](https://jackmwolf.shinyapps.io/SMART_Missingness_Simulator/) and the associated code and files can be found on [GitHub](https://github.com/) at
+[github.com/jackmwolf/SMART_Missingness](https://github.com/jackmwolf/SMART_Missingness).
