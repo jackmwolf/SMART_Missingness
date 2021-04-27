@@ -12,7 +12,11 @@ library(dplyr)
 library(boot)
 library(ggplot2)
 
+library(parallel)
+cl <- makeCluster(detectCores() - 1, 'PSOCK')
+
 source("funcs.R")
+
 
 
 metric_list <- c("Bias", "SE", "MSE")
@@ -168,13 +172,42 @@ server <- function(input, output) {
       load("SMARTdat.rda")
       true.dat <- t
       true.dat$SWITCH <- ifelse(true.dat$SWITCH == "SWITCHED", 1, 0)
+      
+      # See https://stackoverflow.com/a/31927989
+      # Evaluate reactive expressions, store results to pass into parSapply
+      
+      n_sims <- input$n_sims
+      pct_missing <- input$pct_missing
+      mechanism <- input$mechanism
+      n <- 1000
+      
+      clusterExport(
+        cl, 
+        varlist=c("n_sims", "pct_missing", "mechanism", "n", "true.dat", "main"), 
+        envir=environment()
+        )
+      
+      sim.res <- data.frame(t(
+        parSapply(cl, 1:n_sims, function(.x) {
+          library(dplyr)
+          library(boot)
+          source("funcs.R")
+          
+          main(.x, 
+               pct_mis = pct_missing,
+               mis_mec = mechanism,
+               samp_size = 1000,
+               true.dat = true.dat)
+        } 
+        )
+      ))
 
-      sim.res <- data.frame(t(sapply(1:input$n_sims, main,
-        pct_mis = input$pct_missing,
-        mis_mec = input$mechanism,
-        samp_size = 1000,
-        true.dat = true.dat
-      )))
+      # sim.res <- data.frame(t(sapply(1:input$n_sims, main,
+      #   pct_mis = input$pct_missing,
+      #   mis_mec = input$mechanism,
+      #   samp_size = 1000,
+      #   true.dat = true.dat
+      # )))
 
       # Compute summary measures ----
       res <- sapply(sim.res, mean)
