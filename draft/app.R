@@ -35,8 +35,8 @@ ui <- fluidPage(
          missing at random, or missing not at random), percentage of
          missing data, and the number of simulations to generate. Then,
          press 'Simulate!' to begin simulations. Once completed (it takes
-         a while to run, be patient!), results will display on the 'Plot'
-         and 'Table' tabs."
+         a while to run, be patient!), results will display on the 'Results'
+         tab."
       ),
       actionButton("simulate", "Simulate!"),
       h3("Simulation settings:"),
@@ -68,7 +68,7 @@ ui <- fluidPage(
         "You can use between 2 cores and the maximum available cores - 1."
       ),
       checkboxInput("do_parallel", "Use parallel computation", FALSE),
-      numericInput("n_cores", "Number of cores to use",
+      numericInput("n_cores", "Number of cores to use:",
                    value = 2, min = 2, max = maxcores)
     ),
 
@@ -165,10 +165,9 @@ ui <- fluidPage(
           )
         ),
         tabPanel("Results",
+                 textOutput("siminfo"),
                  plotOutput("plot"),
-                 tableOutput("table1")),
-        tabPanel("Simulation Details",
-                 textOutput("siminfo")
+                 tableOutput("table1")
         )
       )
     )
