@@ -11,16 +11,13 @@ library(shiny)
 library(dplyr)
 library(boot)
 library(ggplot2)
-
 library(parallel)
-cl <- makeCluster(detectCores() - 1, 'PSOCK')
-
 source("funcs.R")
 
 
+theme_set(theme_bw(base_size = 18))
 
-metric_list <- c("Bias", "SE", "MSE")
-
+maxcores <- detectCores() - 1
 
 # Define UI for application that draws a histogram
 ui <- fluidPage(
@@ -31,6 +28,18 @@ ui <- fluidPage(
   # Sidebar with a slider input for number of bins
   sidebarLayout(
     sidebarPanel(
+      h3("How to use this app"),
+      p(
+        "Use the input panel (below) to select
+         your desired missingness mechanism (missing completely at random,
+         missing at random, or missing not at random), percentage of
+         missing data, and the number of simulations to generate. Then,
+         press 'Simulate!' to begin simulations. Once completed (it takes
+         a while to run, be patient!), results will display on the 'Plot'
+         and 'Table' tabs."
+      ),
+      actionButton("simulate", "Simulate!"),
+      h3("Simulation settings:"),
       radioButtons("pct_missing",
         "% Missing Data:",
         c("30", "60"),
@@ -38,7 +47,10 @@ ui <- fluidPage(
       ),
       radioButtons("mechanism",
         "Missingness Mechanism",
-        c("MCAR", "MAR", "MNAR"),
+        c(
+          "Missing Completely at Random (MCAR)" = "MCAR", 
+          "Missing at Random (MAR)" = "MAR", 
+          "Missing Not at Random (MNAR)" = "MNAR"),
         selected = "MAR"
       ),
       numericInput("n_sims",
@@ -47,20 +59,19 @@ ui <- fluidPage(
         min = 2,
         max = 100
       ),
-      actionButton("simulate", "Simulate!"),
-      h3("How to use this app"),
+      h3("Parallel computation settings:"),
       p(
-        "Use the input panel (above) to select
-         your desired missingness mechanism (missing completely at random,
-         missing at random, or missing not at random), percentage of
-         missing data, and the number of simulations to generate. Then,
-         press 'Simulate!' to begin simulations. Once completed (it takes
-         a while to run, be patient!), results will display on the 'Plot'
-         and 'Table' tabs."
-      )
+      "If the computer running this application has multiple cores at its 
+       disposal, you can utilize them to speed up computation by running 
+       simulations on multiple cores."),
+      p(
+        "You can use between 2 cores and the maximum available cores - 1."
+      ),
+      checkboxInput("do_parallel", "Use parallel computation", FALSE),
+      numericInput("n_cores", "Number of cores to use",
+                   value = 2, min = 2, max = maxcores)
     ),
 
-    # Show a plot of the generated distribution
     mainPanel(
       tabsetPanel(
         tabPanel(
@@ -149,13 +160,16 @@ ui <- fluidPage(
                 tags$li("select missingness percentages other than 30/60%"),
                 tags$li("see the results of a complete case analysis for comparison"),
                 tags$li("input multiple lists of paramaters and compare between settings"),
-                tags$li("utilize parallel computing to simulate faster")
               )
             )
           )
         ),
-        tabPanel("Plot", plotOutput("plot")),
-        tabPanel("Table", tableOutput("table1"))
+        tabPanel("Results",
+                 plotOutput("plot"),
+                 tableOutput("table1")),
+        tabPanel("Simulation Details",
+                 textOutput("siminfo")
+        )
       )
     )
   )
@@ -168,46 +182,64 @@ server <- function(input, output) {
   re <- eventReactive(
     input$simulate,
     {
-      # Run simulation ----
-      load("SMARTdat.rda")
-      true.dat <- t
-      true.dat$SWITCH <- ifelse(true.dat$SWITCH == "SWITCHED", 1, 0)
       
-      # See https://stackoverflow.com/a/31927989
-      # Evaluate reactive expressions, store results to pass into parSapply
-      
-      n_sims <- input$n_sims
-      pct_missing <- input$pct_missing
-      mechanism <- input$mechanism
-      n <- 1000
-      
-      clusterExport(
-        cl, 
-        varlist=c("n_sims", "pct_missing", "mechanism", "n", "true.dat", "main"), 
-        envir=environment()
-        )
-      
-      sim.res <- data.frame(t(
-        parSapply(cl, 1:n_sims, function(.x) {
-          library(dplyr)
-          library(boot)
-          source("funcs.R")
+      # Time simulation
+      run_time <- 
+        system.time({
           
-          main(.x, 
-               pct_mis = pct_missing,
-               mis_mec = mechanism,
-               samp_size = 1000,
-               true.dat = true.dat)
+        # Run simulation ----
+        load("SMARTdat.rda")
+        true.dat <- t
+        true.dat$SWITCH <- ifelse(true.dat$SWITCH == "SWITCHED", 1, 0)
+        n <- 1000
+        
+        if (input$do_parallel) {
+          # Create a Parallel Socket Cluster
+          cl <- makeCluster(input$n_cores, 'PSOCK')
+        
+          # See https://stackoverflow.com/a/31927989
+          # To send variables to each job need to take them from input
+          n_sims <- input$n_sims
+          pct_missing <- input$pct_missing
+          mechanism <- input$mechanism
+          
+          # Set up clusters and include the following variables
+          clusterExport(
+            cl, 
+            varlist=c("n_sims", "pct_missing", "mechanism", "n", "true.dat", "main"), 
+            envir=environment()
+          )
+          
+          # Run the simulation n_sims times and store as a data.frame
+          sim.res <- data.frame(t(
+            parSapply(cl, 1:n_sims, function(.x) {
+              library(dplyr)
+              library(boot)
+              source("funcs.R")
+              
+              main(.x, 
+                   pct_mis = pct_missing,
+                   mis_mec = mechanism,
+                   samp_size = n,
+                   true.dat = true.dat)
+            } 
+            )
+          ))
+          
+          stopCluster(cl)
+          
+        } else {
+          # Run the simulation n_sims times and store as a data.frame
+          sim.res <- data.frame(t(sapply(1:input$n_sims, main,
+                                         pct_mis = input$pct_missing,
+                                         mis_mec = input$mechanism,
+                                         samp_size = n,
+                                         true.dat = true.dat
+          )))          
         } 
-        )
-      ))
+        
+      })
 
-      # sim.res <- data.frame(t(sapply(1:input$n_sims, main,
-      #   pct_mis = input$pct_missing,
-      #   mis_mec = input$mechanism,
-      #   samp_size = 1000,
-      #   true.dat = true.dat
-      # )))
 
       # Compute summary measures ----
       res <- sapply(sim.res, mean)
@@ -265,7 +297,15 @@ server <- function(input, output) {
         se = se,
         mse = mse,
         cov.probability = cov.probability,
-        plot = plot
+        plot = plot,
+        time = run_time,
+        # Include user input in return of re() so that these reported values on siminfo match
+        # the simulation that is currently displayed (and not what the user currently has entered)
+        n_sims = input$n_sims,
+        pct_missing = input$pct_missing,
+        mechanism = input$mechanism,
+        do_parallel = input$do_parallel,
+        n_cores = input$n_cores
       )
     }
   )
@@ -284,6 +324,16 @@ server <- function(input, output) {
     hover = TRUE,
     rownames = TRUE
   )
+  
+  output$siminfo <- renderText(
+    paste0("Simulation(s) completed in ",
+           round(re()$time[3]/60, 2),
+           " minutes:\n",
+           re()$n_sims, " iteration(s) with ",
+           re()$mechanism, " data and ",
+           re()$pct_missing, "% missingness."
+           )
+    )
 }
 
 # Run the application
