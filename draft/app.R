@@ -65,7 +65,9 @@ ui <- fluidPage(
        disposal, you can utilize them to speed up computation by running 
        simulations on multiple cores."),
       p(
-        "You can use between 2 cores and the maximum available cores - 1."
+        "You can use between 2 and",
+        maxcores,
+        "cores (maximum available cores - 1)."
       ),
       checkboxInput("do_parallel", "Use parallel computation", FALSE),
       numericInput("n_cores", "Number of cores to use:",
