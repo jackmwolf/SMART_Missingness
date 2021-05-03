@@ -9,6 +9,7 @@
 
 library(shiny)
 library(dplyr)
+library(tidyr)
 library(boot)
 library(ggplot2)
 library(parallel)
@@ -19,13 +20,13 @@ theme_set(theme_bw(base_size = 18))
 
 maxcores <- detectCores() - 1
 
-# Define UI for application that draws a histogram
+# Define UI for application ====================================================
 ui <- fluidPage(
 
   # Application title
   titlePanel("SMART Missingness Simulator"),
 
-  # Sidebar with a slider input for number of bins
+  # Sidebar --------------------------------------------------------------------
   sidebarLayout(
     sidebarPanel(
       h3("How to use this app"),
@@ -38,45 +39,61 @@ ui <- fluidPage(
          a while to run, be patient!), results will display on the 'Results'
          tab."
       ),
-      actionButton("simulate", "Simulate!"),
+      actionButton("simulate", "Simulate!"), # run reactive expression
+
+      # Simulation settings ====================================================
       h3("Simulation settings:"),
-      radioButtons("pct_missing",
+      radioButtons("pct_missing", # missingness %
         "% Missing Data:",
         c("30", "60"),
         selected = "30"
       ),
-      radioButtons("mechanism",
+      radioButtons("mechanism", # missingness mechanism
         "Missingness Mechanism",
         c(
-          "Missing Completely at Random (MCAR)" = "MCAR", 
-          "Missing at Random (MAR)" = "MAR", 
-          "Missing Not at Random (MNAR)" = "MNAR"),
+          "Missing Completely at Random (MCAR)" = "MCAR",
+          "Missing at Random (MAR)" = "MAR",
+          "Missing Not at Random (MNAR)" = "MNAR"
+        ),
         selected = "MAR"
       ),
-      numericInput("n_sims",
+      numericInput("n_sims", # number of simulations
         "Number of Simulations:",
         value = 2,
         min = 2,
         max = 100
       ),
+
+      # Parallel computing settings ============================================
       h3("Parallel computation settings:"),
       p(
-      "If the computer running this application has multiple cores at its 
-       disposal, you can utilize them to speed up computation by running 
-       simulations on multiple cores."),
+        "If the computer running this application has multiple cores at its
+       disposal, you can utilize them to speed up computation by running
+       simulations on multiple cores."
+      ),
       p(
         "You can use between 2 and",
         maxcores,
         "cores (maximum available cores - 1)."
       ),
+      p(
+        strong("Warning:"),
+        "Using too many cores on shinyapps.io may require more memory than 
+         allotted on their free plan. We suggest limiting the number of cores
+         to 4 when using shinyapps.io."
+      ),
       checkboxInput("do_parallel", "Use parallel computation", FALSE),
       numericInput("n_cores", "Number of cores to use:",
-                   value = 2, min = 2, max = maxcores)
+        value = 2, min = 2, max = maxcores
+      )
     ),
 
+
+    # Main panel ---------------------------------------------------------------
     mainPanel(
       tabsetPanel(
         tabPanel(
+          # About ==============================================================
           "About",
           h3("Background"),
           p(
@@ -166,114 +183,129 @@ ui <- fluidPage(
             )
           )
         ),
-        tabPanel("Results",
-                 textOutput("siminfo"),
-                 plotOutput("plot"),
-                 tableOutput("table1")
+        # Results ==============================================================
+        tabPanel(
+          "Results",
+          textOutput("siminfo"),
+          plotOutput("plot"),
+          tableOutput("table1"),
+          h3("About these results:"),
+          p(
+            "Each boxplot represents all simulated mean PANSS scores for a given 
+            DTR. The red dot indicates the true mean PANSS score under that DTR."),
+          p(em("Bias:"), "Mean(Estimated DTR Mean - True DTR Mean)"),
+          p(em("SE:"), "SD(Estimated DTR Mean)"),
+          p(em("MSE:"), "Mean([Estimated DTR Mean - True DTR Mean]",
+            tags$sup("2", .noWS = "outside"), ")"),
+          p(em("Coverage Probability:"), "Proportion of simulations where the 
+            95% confidence interval contained the true DTR mean")
         )
       )
     )
   )
 )
 
-# Define server logic required to draw a histogram
+# Define server logic ==========================================================
 server <- function(input, output) {
 
-  # Run simulations whenever simulate button is pressed
+  # Create reactive expression that runs whenever simulate button is pressed
   re <- eventReactive(
     input$simulate,
     {
-      
-      # Time simulation
-      run_time <- 
+
+      # Wrap simulation in system.time to catch run time
+      run_time <-
         system.time({
-          
-        # Run simulation ----
-        load("SMARTdat.rda")
-        true.dat <- t
-        true.dat$SWITCH <- ifelse(true.dat$SWITCH == "SWITCHED", 1, 0)
-        n <- 1000
-        
-        if (input$do_parallel) {
-          # Create a Parallel Socket Cluster
-          cl <- makeCluster(input$n_cores, 'PSOCK')
-        
-          # See https://stackoverflow.com/a/31927989
-          # To send variables to each job need to take them from input
-          n_sims <- input$n_sims
-          pct_missing <- input$pct_missing
-          mechanism <- input$mechanism
-          
-          # Set up clusters and include the following variables
-          clusterExport(
-            cl, 
-            varlist=c("n_sims", "pct_missing", "mechanism", "n", "true.dat", "main"), 
-            envir=environment()
-          )
-          
-          # Run the simulation n_sims times and store as a data.frame
-          sim.res <- data.frame(t(
-            parSapply(cl, 1:n_sims, function(.x) {
-              library(dplyr)
-              library(boot)
-              source("funcs.R")
-              
-              main(.x, 
-                   pct_mis = pct_missing,
-                   mis_mec = mechanism,
-                   samp_size = n,
-                   true.dat = true.dat)
-            } 
+
+          # Run simulation -------------------------------------------------------
+          # load data (object named "t") and prepare for simulation
+          load("SMARTdat.rda")
+          true.dat <- t
+          true.dat$SWITCH <- ifelse(true.dat$SWITCH == "SWITCHED", 1, 0)
+          # hard code sample size
+          n <- 1000
+
+          if (input$do_parallel) {
+            # Create a Parallel Socket Cluster
+            cl <- makeCluster(input$n_cores, "PSOCK")
+
+            # See https://stackoverflow.com/a/31927989
+            # To send variables to each job through clusterExport() we need to
+            # take them from input and put them in this environment
+            n_sims <- input$n_sims
+            pct_missing <- input$pct_missing
+            mechanism <- input$mechanism
+
+            # Set up clusters and include the following variables
+            clusterExport(
+              cl,
+              varlist = c("n_sims", "pct_missing", "mechanism", "n", "true.dat", "main"),
+              envir = environment()
             )
-          ))
+
+            # Run the simulation n_sims times and store as a data.frame
+            sim.res <- data.frame(t(
+              parSapply(cl, 1:n_sims, function(.x) {
+                # Need to load packages and generate functions from funcs.R
+                # inside the new environment
+                library(dplyr)
+                library(boot)
+                source("funcs.R")
+
+                main(.x,
+                  pct_mis = pct_missing,
+                  mis_mec = mechanism,
+                  samp_size = n,
+                  true.dat = true.dat
+                )
+              })
+            ))
+            
+            # Clean up the cluster when done
+            stopCluster(cl)
+            
+          } else {
+            # If NOT using parallel computing
+
+            # Run the simulation n_sims times and store as a data.frame
+            sim.res <- data.frame(t(sapply(1:input$n_sims, main,
+              pct_mis = input$pct_missing,
+              mis_mec = input$mechanism,
+              samp_size = n,
+              true.dat = true.dat
+            )))
+          }
           
-          stopCluster(cl)
-          
-        } else {
-          # Run the simulation n_sims times and store as a data.frame
-          sim.res <- data.frame(t(sapply(1:input$n_sims, main,
-                                         pct_mis = input$pct_missing,
-                                         mis_mec = input$mechanism,
-                                         samp_size = n,
-                                         true.dat = true.dat
-          )))          
-        } 
-        
-      })
+        }) # End of simulation
 
 
-      # Compute summary measures ----
-      res <- sapply(sim.res, mean)
-      names(res) <- c(
-        "O1", "O2", "R1", "R2", "Q1", "Q2", "Q3", "C.O1", "C.O2",
-        "C.R1", "C.R2", "C.Q1", "C.Q2", "C.Q3"
-      )
-
+      # Compute summary measures -----------------------------------------------
+      dtr_means <- sim.res[1:7]
+      dtr_coverage <- sim.res[8:14]
+      
+      dtr_names <- c("O1", "O2", "R1", "R2", "Q1", "Q2", "Q3")
+      colnames(dtr_means) <- dtr_names
+      colnames(dtr_coverage) <- dtr_names
+      names(true.means) <- dtr_names
+      
+      
+      
       # Metrics send to user
-      bias <- res[1:7] - true.means
-      se <- sapply(sim.res[1:7], sd)
-      cov.probability <- res[8:14]
-      mse <- c()
-      for (i in 1:7) {
-        m <- mean((sim.res[, i] - true.means[i])^2)
-        mse <- c(m, mse)
-      }
+      bias <- colMeans(dtr_means) - true.means
+      se <- sapply(dtr_means, sd)
+      mse <- bias^2 + se^2
+      cov.probability <- colMeans(dtr_coverage)
 
-      # Plot
-      Regime <- c(
-        rep("DTR1", input$n_sims), rep("DTR2", input$n_sims), rep("DTR3", input$n_sims),
-        rep("DTR4", input$n_sims), rep("DTR5", input$n_sims), rep("DTR6", input$n_sims),
-        rep("DTR7", input$n_sims)
-      )
-
-      reg.means <- c(
-        sim.res[, 1], sim.res[, 2], sim.res[, 3], sim.res[, 4], sim.res[, 5],
-        sim.res[, 6], sim.res[, 7]
-      )
-
-      plot.df <- data.frame(Regime, reg.means)
-
-      plot <- ggplot(plot.df, aes(Regime, reg.means, fill = Regime)) +
+      # Plot DTR means ---------------------------------------------------------
+      # Create long data where each row is the sample DTR mean PANSS score for
+      # a given DTR on a given simulation
+      plot.df <- dtr_means %>% 
+        pivot_longer(cols = everything(), names_to = "Regime", 
+                     values_to = "reg.means")
+      
+      annotate.df <- tibble(Regime = names(true.means), reg.means = true.means)
+      
+      plot <- ggplot(plot.df, aes(x = Regime, y = reg.means, fill = Regime)) +
         geom_boxplot() +
         labs(
           y = "Expected PANSS score", x = "Embedded DTR",
@@ -283,16 +315,12 @@ server <- function(input, output) {
       # Add the true means to the plot (red dots)
       plot <-
         plot +
-        annotate("point", x = "DTR1", y = true.means[1], colour = "red", size = 3) +
-        annotate("point", x = "DTR2", y = true.means[2], colour = "red", size = 3) +
-        annotate("point", x = "DTR3", y = true.means[3], colour = "red", size = 3) +
-        annotate("point", x = "DTR4", y = true.means[4], colour = "red", size = 3) +
-        annotate("point", x = "DTR5", y = true.means[5], colour = "red", size = 3) +
-        annotate("point", x = "DTR6", y = true.means[6], colour = "red", size = 3) +
-        annotate("point", x = "DTR7", y = true.means[7], colour = "red", size = 3) +
+        geom_point(data = annotate.df, aes(x = Regime, y = reg.means), 
+                   color = "red", size = 3) +
         theme(legend.position = "none")
+      
 
-      # Return all results in a list
+      # Return all results in a list -------------------------------------------
       list(
         bias = bias,
         se = se,
@@ -317,25 +345,25 @@ server <- function(input, output) {
 
   output$table1 <- renderTable(
     expr = {
-      rbind(re()$bias, re()$se, re()$mse) %>%
-        `rownames<-`(c("Bias", "SE", "MSE")) %>%
-        `colnames<-`(paste0("DTR", 1:7))
+      rbind(re()$bias, re()$se, re()$mse, re()$cov.probability) %>%
+        `rownames<-`(c("Bias", "SE", "MSE", "Coverage Probability"))
     },
     striped = TRUE,
     hover = TRUE,
     rownames = TRUE
   )
-  
+
   output$siminfo <- renderText(
-    paste0("Simulation(s) completed in ",
-           round(re()$time[3]/60, 2),
-           " minutes:\n",
-           re()$n_sims, " iteration(s) with ",
-           re()$mechanism, " data and ",
-           re()$pct_missing, "% missingness."
-           )
+    paste0(
+      "Simulation(s) completed in ",
+      round(re()$time[3] / 60, 2),
+      " minutes:\n",
+      re()$n_sims, " iteration(s) with ",
+      re()$mechanism, " data and ",
+      re()$pct_missing, "% missingness."
     )
+  )
 }
 
-# Run the application
+# Run the application ==========================================================
 shinyApp(ui = ui, server = server)
