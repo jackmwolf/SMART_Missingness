@@ -323,7 +323,7 @@ server <- function(input, output) {
           color = "red", size = 3
         ) +
         theme(legend.position = "none")
-
+      
 
       # Return all results in a list -------------------------------------------
       list(
