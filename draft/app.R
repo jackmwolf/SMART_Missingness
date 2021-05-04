@@ -179,7 +179,7 @@ ui <- fluidPage(
                 tags$li("control which metrics are reported and which are hidden"),
                 tags$li("select missingness percentages other than 30/60%"),
                 tags$li("see the results of a complete case analysis for comparison"),
-                tags$li("input multiple lists of paramaters and compare between settings"),
+                tags$li("input multiple lists of paramaters and compare between settings")
               )
             )
           )
@@ -195,17 +195,38 @@ ui <- fluidPage(
             "Each boxplot represents all simulated mean PANSS scores for a given
             DTR. The red dot indicates the true mean PANSS score under that DTR."
           ),
-          p(em("Bias:"), "Mean(Estimated DTR Mean - True DTR Mean)"),
-          p(em("SE:"), "SD(Estimated DTR Mean)"),
+          h4("Metrics"),
           p(
-            em("MSE:"), "Mean([Estimated DTR Mean - True DTR Mean]",
-            tags$sup("2", .noWS = "outside"), ")"
-          ),
-          p(em("Coverage Probability:"), "Proportion of simulations where the
+            tags$div( # HTML bulleted list
+              tags$ul(
+                tags$li(em("Bias:"), "Mean(Estimated DTR Mean - True DTR Mean)"),
+                tags$li(em("SE:"), "SD(Estimated DTR Mean)"),
+                tags$li(em("MSE:"), "Mean([Estimated DTR Mean - True DTR Mean]",
+                        tags$sup("2", .noWS = "outside"), ")"),
+                tags$li(em("Coverage Probability:"), "Proportion of simulations where the
             95% confidence interval contained the true DTR mean")
+              )
+            )
+          ),
+          h4("Treatment Regimes"),
+          p("All treatment regimes are expressed as the initial treatment 
+            followed by the treatment to which non-responders will change."),
+          p(
+            tags$div( # HTML bulleted list
+              tags$ul(
+                tags$li(em("O,R:"), "Olanzapine, Risperidone"),
+                tags$li(em("O,Typ:"), "Olanzapine, Typical Antipsychotic"),
+                tags$li(em("R,O:"), "Risperidone, Olanzapine"),
+                tags$li(em("R,Typ:"), "Risperidone, Typical Antipsychotic"),
+                tags$li(em("Q,O:"), "Quetiapine, Olanzapine"),
+                tags$li(em("Q,R:"), "Quetiapine, Risperidone"),
+                tags$li(em("Q,Typ:"), "Quetiapine, Typical Antipsychotic")
+                )
+              )
+            )
+          )
         )
       )
-    )
   )
 )
 
