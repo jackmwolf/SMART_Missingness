@@ -16,6 +16,7 @@ library(parallel)
 source("funcs.R")
 
 
+# Set ggplot2 default plot
 theme_set(theme_bw(base_size = 18))
 
 maxcores <- detectCores() - 1
