@@ -284,7 +284,7 @@ server <- function(input, output) {
       dtr_means <- sim.res[1:7]
       dtr_coverage <- sim.res[8:14]
 
-      dtr_names <- c("O1", "O2", "R1", "R2", "Q1", "Q2", "Q3")
+      dtr_names <- c("O,R", "O,Typ", "R,O", "R,Typ", "Q,O", "Q,R", "Q,Typ")
       colnames(dtr_means) <- dtr_names
       colnames(dtr_coverage) <- dtr_names
       names(true.means) <- dtr_names
