@@ -430,11 +430,6 @@ main <- function(sims, pct_mis, mis_mech, samp_size, true.dat) {
 # 
 # plot.df <- data.frame(Regime, reg.means,analysis)
 # 
-# plot = ggplot(plot.df, aes(Regime, reg.means, fill=Regime)) +
-#   geom_boxplot() +
-#   labs(y = "Expected PANSS score", x="Embedded DTR",
-#        title="Comparing embedded DTRs")
-# 
 # plot = ggplot(plot.df) +
 #   aes(x = Regime, y = reg.means, fill = Regime) +
 #   geom_boxplot(shape = "circle") +
