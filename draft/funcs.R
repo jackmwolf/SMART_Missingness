@@ -254,76 +254,135 @@ main <- function(sims, pct_mis, mis_mech, samp_size, true.dat) {
       dat.mis <- gen.mis.mcar(N=samp_size,dropout.time=1,pr.r1=.15, pr.r2=.05, pr.r3=.15,dat=sim.dat)
     }
     
-    #### Perform MI ####
-    varO1 = varO2 = varR1 = varR2 = varQ1 = varQ2 = varQ3 <- c()
-    regO1 = regO2 = regR1 = regR2 = regQ1 = regQ2 = regQ3 <- c()
-    sim.O1 = sim.O2 = sim.R1 = sim.R2 = sim.Q1 = sim.Q2 = sim.Q3 = 0
-    CovO1 = CovO2 = CovR1 = CovR2 = CovQ1 = CovQ2 = CovQ3 = 0
-    #Run MI 10 times and get 10 estimates
-    for (i in 1:10){
-      set.seed(i)
-      imp.dat = smart.mi(dat=dat.mis,mis.bas=FALSE,mis.end=TRUE,mis.switch=TRUE)
-      
-      #Set up data
-      ipw.dat = setup(mi.dat=imp.dat)
-      
+  #### Perform MI ####
+  varO1 = varO2 = varR1 = varR2 = varQ1 = varQ2 = varQ3 <- c()
+  regO1 = regO2 = regR1 = regR2 = regQ1 = regQ2 = regQ3 <- c()
+  sim.O1 = sim.O2 = sim.R1 = sim.R2 = sim.Q1 = sim.Q2 = sim.Q3 = 0
+  CovO1 = CovO2 = CovR1 = CovR2 = CovQ1 = CovQ2 = CovQ3 = 0
+  #complete case
+  varO1cc = varO2cc = varR1cc = varR2cc = varQ1cc = varQ2cc = varQ3cc <- c()
+  regO1cc = regO2cc = regR1cc = regR2cc = regQ1cc = regQ2cc = regQ3cc <- c()
+  ccsim.O1 = ccsim.O2 = ccsim.R1 = ccsim.R2 = ccsim.Q1 = ccsim.Q2 = ccsim.Q3 = 0
+  ccCovO1 = ccCovO2 = ccCovR1 = ccCovR2 = ccCovQ1 = ccCovQ2 = ccCovQ3 = 0
+  #Run MI 10 times and get 10 estimates
+  for (i in 1:10){
+    set.seed(i)
+    imp.dat = smart.mi(dat=dat.mis,mis.bas=FALSE,mis.end=TRUE,mis.switch=TRUE)
+    
+    #Set up data
+    ipw.dat = setup(mi.dat=imp.dat)
+    
     #### Regime means #### 
-      #Regime means and SE's via IPW
-      # R is the # of bootstrap simulations
-      # (oo,or), (oo,cl or z), (qq,qo), (qq,qr), (qq,qcl or qz), (rr,ro), (rr,rcl or rz)#
-      regO1[i] = regime.mean(trt1="Olanzapine",trt2="Risperidone",dat=ipw.dat)
-      reg1.boot = boot(data=ipw.dat,statistic=regime.mean.boot,trt1="Olanzapine",trt2="Risperidone",R=1000)
-      varO1[i] = var(reg1.boot$t)
-      
-      regO2[i] = regime.mean(trt1="Olanzapine",trt2="Clz",dat=ipw.dat)
-      reg2.boot = boot(data=ipw.dat,statistic=regime.mean.boot,trt1="Olanzapine",trt2="Clz",R=1000)
-      varO2[i] = var(reg2.boot$t)
-      
-      regR1[i] = regime.mean(trt1="Risperidone",trt2="Olanzapine",dat=ipw.dat)
-      reg3.boot = boot(data=ipw.dat,statistic=regime.mean.boot,trt1="Risperidone",trt2="Olanzapine",R=1000)
-      varR1[i] = var(reg3.boot$t)
-      
-      regR2[i] = regime.mean(trt1="Risperidone",trt2="Clz",dat=ipw.dat)
-      reg4.boot = boot(data=ipw.dat,statistic=regime.mean.boot,trt1="Risperidone",trt2="Clz",R=1000)
-      varR2[i] = var(reg4.boot$t)
-      
-      regQ1[i] = regime.mean(trt1="Quetiapine",trt2="Olanzapine",dat=ipw.dat)
-      reg5.boot = boot(data=ipw.dat,statistic=regime.mean.boot,trt1="Quetiapine",trt2="Olanzapine",R=1000)
-      varQ1[i] = var(reg5.boot$t)
-      
-      regQ2[i] = regime.mean(trt1="Quetiapine",trt2="Risperidone",dat=ipw.dat)
-      reg6.boot = boot(data=ipw.dat,statistic=regime.mean.boot,trt1="Quetiapine",trt2="Risperidone",R=1000)
-      varQ2[i] = var(reg6.boot$t)
-      
-      regQ3[i]= regime.mean(trt1="Quetiapine",trt2="Clz",dat=ipw.dat)
-      reg7.boot = boot(data=ipw.dat,statistic=regime.mean.boot,trt1="Quetiapine",trt2="Clz",R=1000)
-      varQ3[i] = var(reg7.boot$t) 
-    }
+    #Regime means and SE's via IPW
+    # R is the # of bootstrap simulations
+    # (oo,or), (oo,cl or z), (qq,qo), (qq,qr), (qq,qcl or qz), (rr,ro), (rr,rcl or rz)#
+    regO1[i] = regime.mean(trt1="Olanzapine",trt2="Risperidone",dat=ipw.dat)
+    reg1.boot = boot(data=ipw.dat,statistic=regime.mean.boot,trt1="Olanzapine",trt2="Risperidone",R=1000)
+    varO1[i] = var(reg1.boot$t)
     
-    #### Final results from simulation ####
-    #Regime Means
-    sim.O1 <- mean(regO1); sim.O2 <- mean(regO2); sim.R1 <- mean(regR1); sim.R2 <- mean(regR2)
-    sim.Q1 <- mean(regQ1); sim.Q2 <- mean(regQ2); sim.Q3 <- mean(regQ3)
+    regO2[i] = regime.mean(trt1="Olanzapine",trt2="Clz",dat=ipw.dat)
+    reg2.boot = boot(data=ipw.dat,statistic=regime.mean.boot,trt1="Olanzapine",trt2="Clz",R=1000)
+    varO2[i] = var(reg2.boot$t)
     
-    #Regime SE's
-    sim.seO1 <- se.mi(reg=regO1,var=varO1); sim.seO2 <- se.mi(reg=regO2,var=varO2); 
-    sim.seR1 <- se.mi(reg=regR1,var=varR1); sim.seR2 <- se.mi(reg=regR2,var=varR2)
-    sim.seQ1 <- se.mi(reg=regQ1,var=varQ1); sim.seQ2 <- se.mi(reg=regQ2,var=varQ2); 
-    sim.seQ3 <- se.mi(reg=regQ3,var=varQ3)
+    regR1[i] = regime.mean(trt1="Risperidone",trt2="Olanzapine",dat=ipw.dat)
+    reg3.boot = boot(data=ipw.dat,statistic=regime.mean.boot,trt1="Risperidone",trt2="Olanzapine",R=1000)
+    varR1[i] = var(reg3.boot$t)
     
-    #CI and Coverage probability
-    CIO1 <- sim.O1+c(-1,1)*qnorm(.975)*sim.seO1; CovO1 <- ifelse(t.regO1>CIO1[1] & t.regO1<CIO1[2],1,0)
-    CIO2 <- sim.O2+c(-1,1)*qnorm(.975)*sim.seO2; CovO2 <- ifelse(t.regO2>CIO2[1] & t.regO2<CIO2[2],1,0)
-    CIR1 <- sim.R1+c(-1,1)*qnorm(.975)*sim.seR1; CovR1 <- ifelse(t.regR1>CIR1[1] & t.regR1<CIR1[2],1,0)
-    CIR2 <- sim.R2+c(-1,1)*qnorm(.975)*sim.seR2; CovR2 <- ifelse(t.regR2>CIR2[1] & t.regR2<CIR2[2],1,0)
-    CIQ1 <- sim.Q1+c(-1,1)*qnorm(.975)*sim.seQ1; CovQ1 <- ifelse(t.regQ1>CIQ1[1] & t.regQ1<CIQ1[2],1,0)
-    CIQ2 <- sim.Q2+c(-1,1)*qnorm(.975)*sim.seQ2; CovQ2 <- ifelse(t.regQ2>CIQ2[1] & t.regQ2<CIQ2[2],1,0)
-    CIQ3 <- sim.Q3+c(-1,1)*qnorm(.975)*sim.seQ3; CovQ3 <- ifelse(t.regQ3>CIQ3[1] & t.regQ3<CIQ3[2],1,0)
+    regR2[i] = regime.mean(trt1="Risperidone",trt2="Clz",dat=ipw.dat)
+    reg4.boot = boot(data=ipw.dat,statistic=regime.mean.boot,trt1="Risperidone",trt2="Clz",R=1000)
+    varR2[i] = var(reg4.boot$t)
     
-    sim.means <- c(sim.O1,sim.O2,sim.R1,sim.R2,sim.Q1,sim.Q2,sim.Q3)
-    sim.cov <- c(CovO1,CovO2,CovR1,CovR2,CovQ1,CovQ2,CovQ3)
-    return(cbind(sim.means,sim.cov))
+    regQ1[i] = regime.mean(trt1="Quetiapine",trt2="Olanzapine",dat=ipw.dat)
+    reg5.boot = boot(data=ipw.dat,statistic=regime.mean.boot,trt1="Quetiapine",trt2="Olanzapine",R=1000)
+    varQ1[i] = var(reg5.boot$t)
+    
+    regQ2[i] = regime.mean(trt1="Quetiapine",trt2="Risperidone",dat=ipw.dat)
+    reg6.boot = boot(data=ipw.dat,statistic=regime.mean.boot,trt1="Quetiapine",trt2="Risperidone",R=1000)
+    varQ2[i] = var(reg6.boot$t)
+    
+    regQ3[i]= regime.mean(trt1="Quetiapine",trt2="Clz",dat=ipw.dat)
+    reg7.boot = boot(data=ipw.dat,statistic=regime.mean.boot,trt1="Quetiapine",trt2="Clz",R=1000)
+    varQ3[i] = var(reg7.boot$t) 
   }
+  #### Complete case ####
+  delete.miscases <- which(is.na(dat.mis$PANSSTOT.2)) #since there is structural missingness complete.cases should not be used
+  #Those missing PANSSTOT.2 are missing all the other variables we made missing in the missing mechanism functions
+  #(because the missingness is monotone)
+  ccdat <- setup(dat.mis[-delete.miscases,])
+
+  regO1cc= regime.mean(trt1="Olanzapine",trt2="Risperidone",dat=ccdat)
+  reg1.bootcc = boot(data=ccdat,statistic=regime.mean.boot,trt1="Olanzapine",trt2="Risperidone",R=1000)
+  varO1cc= var(reg1.bootcc$t)
+
+  regO2cc= regime.mean(trt1="Olanzapine",trt2="Clz",dat=ccdat)
+  reg2.bootcc = boot(data=ccdat,statistic=regime.mean.boot,trt1="Olanzapine",trt2="Clz",R=1000)
+  varO2cc = var(reg2.bootcc$t)
+
+  regR1cc = regime.mean(trt1="Risperidone",trt2="Olanzapine",dat=ccdat)
+  reg3.bootcc = boot(data=ccdat,statistic=regime.mean.boot,trt1="Risperidone",trt2="Olanzapine",R=1000)
+  varR1cc = var(reg3.bootcc$t)
+
+  regR2cc = regime.mean(trt1="Risperidone",trt2="Clz",dat=ccdat)
+  reg4.bootcc = boot(data=ccdat,statistic=regime.mean.boot,trt1="Risperidone",trt2="Clz",R=1000)
+  varR2cc = var(reg4.bootcc$t)
+
+  regQ1cc = regime.mean(trt1="Quetiapine",trt2="Olanzapine",dat=ccdat)
+  reg5.bootcc = boot(data=ccdat,statistic=regime.mean.boot,trt1="Quetiapine",trt2="Olanzapine",R=1000)
+  varQ1cc = var(reg5.bootcc$t)
+
+  regQ2cc = regime.mean(trt1="Quetiapine",trt2="Risperidone",dat=ccdat)
+  reg6.bootcc = boot(data=ccdat,statistic=regime.mean.boot,trt1="Quetiapine",trt2="Risperidone",R=1000)
+  varQ2cc = var(reg6.bootcc$t)
+
+  regQ3cc = regime.mean(trt1="Quetiapine",trt2="Clz",dat=ccdat)
+  reg7.bootcc = boot(data=ccdat,statistic=regime.mean.boot,trt1="Quetiapine",trt2="Clz",R=1000)
+  varQ3cc = var(reg7.bootcc$t)
+  
+  #### Final results from simulation ####
+  #Regime Means
+  sim.O1 <- mean(regO1); sim.O2 <- mean(regO2); sim.R1 <- mean(regR1); sim.R2 <- mean(regR2)
+  sim.Q1 <- mean(regQ1); sim.Q2 <- mean(regQ2); sim.Q3 <- mean(regQ3)
+  
+  # #complete case 
+  ccsim.O1 <- mean(regO1cc); ccsim.O2 <- mean(regO2cc); ccsim.R1 <- mean(regR1cc); ccsim.R2 <- mean(regR2cc)
+  ccsim.Q1 <- mean(regQ1cc); ccsim.Q2 <- mean(regQ2cc); ccsim.Q3 <- mean(regQ3cc)
+  
+  #Regime SE's
+  sim.seO1 <- se.mi(reg=regO1,var=varO1); sim.seO2 <- se.mi(reg=regO2,var=varO2); 
+  sim.seR1 <- se.mi(reg=regR1,var=varR1); sim.seR2 <- se.mi(reg=regR2,var=varR2)
+  sim.seQ1 <- se.mi(reg=regQ1,var=varQ1); sim.seQ2 <- se.mi(reg=regQ2,var=varQ2); 
+  sim.seQ3 <- se.mi(reg=regQ3,var=varQ3)
+  # 
+  # #complete case
+  ccsim.seO1 <- se.mi(reg=regO1cc,var=varO1cc); ccsim.seO2 <- se.mi(reg=regO2cc,var=varO2cc);
+  ccsim.seR1 <- se.mi(reg=regR1cc,var=varR1cc); ccsim.seR2 <- se.mi(reg=regR2cc,var=varR2cc)
+  ccsim.seQ1 <- se.mi(reg=regQ1cc,var=varQ1cc); ccsim.seQ2 <- se.mi(reg=regQ2cc,var=varQ2cc);
+  ccsim.seQ3 <- se.mi(reg=regQ3cc,var=varQ3cc)
+  # 
+  #CI and Coverage probability
+  CIO1 <- sim.O1+c(-1,1)*qnorm(.975)*sim.seO1; CovO1 <- ifelse(t.regO1>CIO1[1] & t.regO1<CIO1[2],1,0)
+  CIO2 <- sim.O2+c(-1,1)*qnorm(.975)*sim.seO2; CovO2 <- ifelse(t.regO2>CIO2[1] & t.regO2<CIO2[2],1,0)
+  CIR1 <- sim.R1+c(-1,1)*qnorm(.975)*sim.seR1; CovR1 <- ifelse(t.regR1>CIR1[1] & t.regR1<CIR1[2],1,0)
+  CIR2 <- sim.R2+c(-1,1)*qnorm(.975)*sim.seR2; CovR2 <- ifelse(t.regR2>CIR2[1] & t.regR2<CIR2[2],1,0)
+  CIQ1 <- sim.Q1+c(-1,1)*qnorm(.975)*sim.seQ1; CovQ1 <- ifelse(t.regQ1>CIQ1[1] & t.regQ1<CIQ1[2],1,0)
+  CIQ2 <- sim.Q2+c(-1,1)*qnorm(.975)*sim.seQ2; CovQ2 <- ifelse(t.regQ2>CIQ2[1] & t.regQ2<CIQ2[2],1,0)
+  CIQ3 <- sim.Q3+c(-1,1)*qnorm(.975)*sim.seQ3; CovQ3 <- ifelse(t.regQ3>CIQ3[1] & t.regQ3<CIQ3[2],1,0)
+  
+  # #complete case
+  ccCIO1 <- ccsim.O1+c(-1,1)*qnorm(.975)*ccsim.seO1; ccCovO1 <- ifelse(t.regO1>ccCIO1[1] & t.regO1<ccCIO1[2],1,0)
+  ccCIO2 <- ccsim.O2+c(-1,1)*qnorm(.975)*ccsim.seO2; ccCovO2 <- ifelse(t.regO2>ccCIO2[1] & t.regO2<ccCIO2[2],1,0)
+  ccCIR1 <- ccsim.R1+c(-1,1)*qnorm(.975)*ccsim.seR1; ccCovR1 <- ifelse(t.regR1>ccCIR1[1] & t.regR1<ccCIR1[2],1,0)
+  ccCIR2 <- ccsim.R2+c(-1,1)*qnorm(.975)*ccsim.seR2; ccCovR2 <- ifelse(t.regR2>ccCIR2[1] & t.regR2<ccCIR2[2],1,0)
+  ccCIQ1 <- ccsim.Q1+c(-1,1)*qnorm(.975)*ccsim.seQ1; ccCovQ1 <- ifelse(t.regQ1>ccCIQ1[1] & t.regQ1<ccCIQ1[2],1,0)
+  ccCIQ2 <- ccsim.Q2+c(-1,1)*qnorm(.975)*ccsim.seQ2; ccCovQ2 <- ifelse(t.regQ2>ccCIQ2[1] & t.regQ2<ccCIQ2[2],1,0)
+  ccCIQ3 <- ccsim.Q3+c(-1,1)*qnorm(.975)*ccsim.seQ3; ccCovQ3 <- ifelse(t.regQ3>ccCIQ3[1] & t.regQ3<ccCIQ3[2],1,0)
+  
+  sim.means <- c(sim.O1,sim.O2,sim.R1,sim.R2,sim.Q1,sim.Q2,sim.Q3)
+  sim.cov <- c(CovO1,CovO2,CovR1,CovR2,CovQ1,CovQ2,CovQ3)
+  ccsim.means <- c(ccsim.O1,ccsim.O2,ccsim.R1,ccsim.R2,ccsim.Q1,ccsim.Q2,ccsim.Q3)
+  ccsim.cov <- c(ccCovO1,ccCovO2,ccCovR1,ccCovR2,ccCovQ1,ccCovQ2,ccCovQ3)
+  return(cbind(sim.means,sim.cov,ccsim.means,ccsim.cov))
+}
 ################################################################################
 # 
 # #Aggregate over n_sims
@@ -332,33 +391,55 @@ main <- function(sims, pct_mis, mis_mech, samp_size, true.dat) {
 # ########################## Final Results #######################################
 # 
 # res <- sapply(sim.res, mean)
-# names(res)=c("O1","O2","R1","R2","Q1","Q2","Q3","C.O1","C.O2","C.R1","C.R2","C.Q1","C.Q2","C.Q3")
+# names(res)=c("O1","O2","R1","R2","Q1","Q2","Q3","C.O1","C.O2","C.R1","C.R2","C.Q1","C.Q2","C.Q3",
+#              "ccO1","ccO2","ccR1","ccR2","ccQ1","ccQ2","ccQ3","ccC.O1","ccC.O2","ccC.R1","ccC.R2",
+#              "ccC.Q1","ccC.Q2","ccC.Q3")
 # 
 # #Metrics send to user
 # bias <- res[1:7]-true.means
+# ccbias <- res[15:21]-true.means
 # se <- sapply(sim.res[1:7],sd)
+# ccse <- sapply(sim.res[15:21],sd)
 # cov.probability <- res[8:14]
+# cc.cov.probability <- res[22:28]
 # mse <- c()
+# cc.mse <- c()
 # for (i in 1:7){
 #   m <- mean( (sim.res[,i] - true.means[i])^2 )
-#   mse <- c(m,mse)}
+#   mse <- c(m,mse)
+# }
 # mse <- round(mse)
 # 
+# for (i in 15:21){
+#   cc.m <- mean( (sim.res[,i] - true.means[i-14])^2 )
+#   cc.mse <- c(cc.m, cc.mse)
+# }
+# cc.mse <- round(cc.mse)
 # 
 # #Plot
-# Regime <- c(rep("DTR1",n_sims),rep("DTR2",n_sims),rep("DTR3",n_sims),
-#             rep("DTR4",n_sims),rep("DTR5",n_sims),rep("DTR6",n_sims),
-#             rep("DTR7",n_sims))
+# Regime <- rep(c(rep("DTR1",n_sims),rep("DTR2",n_sims),rep("DTR3",n_sims),
+#                 rep("DTR4",n_sims),rep("DTR5",n_sims),rep("DTR6",n_sims),
+#                 rep("DTR7",n_sims)),2)
 # 
 # reg.means <- c(sim.res[,1],sim.res[,2],sim.res[,3],sim.res[,4],sim.res[,5],
-#                sim.res[,6],sim.res[,7])
+#                sim.res[,6],sim.res[,7], 
+#                sim.res[,15],sim.res[,16],sim.res[,17],sim.res[,18],sim.res[,19],
+#                sim.res[,20],sim.res[,21])
 # 
-# plot.df <- data.frame(Regime, reg.means)
+# analysis <- c(rep("Multiple Imputation",7*n_sims), rep("Complete Case",7*n_sims))
+# 
+# plot.df <- data.frame(Regime, reg.means,analysis)
 # 
 # plot = ggplot(plot.df, aes(Regime, reg.means, fill=Regime)) +
 #   geom_boxplot() +
 #   labs(y = "Expected PANSS score", x="Embedded DTR",
 #        title="Comparing embedded DTRs")
+# 
+# plot = ggplot(plot.df) +
+#   aes(x = Regime, y = reg.means, fill = Regime) +
+#   geom_boxplot(shape = "circle") +
+#   scale_fill_hue(direction = 1) +
+#   facet_wrap(vars(analysis), ncol = 2L)
 # 
 # #Add the true means to the plot (red dots)
 # plot +
@@ -370,4 +451,3 @@ main <- function(sims, pct_mis, mis_mech, samp_size, true.dat) {
 #   annotate("point", x = "DTR6", y = true.means[6], colour = "red",size=3)+
 #   annotate("point", x = "DTR7", y = true.means[7], colour = "red",size=3)+
 #   theme(legend.position = "none")
-# 
