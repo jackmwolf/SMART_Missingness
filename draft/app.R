@@ -10,6 +10,9 @@
 library(shiny)
 library(dplyr)
 library(tidyr)
+library(forcats)
+library(stringr)
+
 library(boot)
 library(ggplot2)
 library(parallel)
@@ -43,7 +46,7 @@ ui <- fluidPage(
       actionButton("simulate", "Simulate!"), # run reactive expression
 
       # Simulation settings ====================================================
-      h3("Simulation settings:"),
+      h3("Simulation:"),
       radioButtons("pct_missing", # missingness %
         "% Missing Data:",
         c("30", "60"),
@@ -64,9 +67,13 @@ ui <- fluidPage(
         min = 2,
         max = 100
       ),
+      
+      # Results ================================================================
+      h3("Output:"),
+      checkboxInput("cc", "Display results of a complete case analysis", TRUE),
 
       # Parallel computing settings ============================================
-      h3("Parallel computation settings:"),
+      h3("Parallel computation:"),
       p(
         "If the computer running this application has multiple cores at its
        disposal, you can utilize them to speed up computation by running
@@ -75,7 +82,7 @@ ui <- fluidPage(
       p(
         "You can use between 2 and",
         maxcores,
-        "cores (maximum available cores)."
+        "cores (maximum available cores - 1)."
       ),
       p(
         strong("Warning:"),
@@ -176,7 +183,6 @@ ui <- fluidPage(
             tags$div( # HTML bulleted list
               tags$ul(
                 tags$li("vary the sample size"),
-                tags$li("control which metrics are reported and which are hidden"),
                 tags$li("select missingness percentages other than 30/60%"),
                 tags$li("input multiple lists of paramaters and compare between settings")
               )
@@ -187,29 +193,17 @@ ui <- fluidPage(
         tabPanel(
           "Results",
           textOutput("siminfo"),
-          plotOutput("plot"),
+          plotOutput("plot", height = "500px"),
           tableOutput("table1"),
-          h3("About these results:"),
+          h3("About these results"),
           p(
-            "Each boxplot represents all simulated mean PANSS scores for a given
-            DTR. The red dot indicates the true mean PANSS score under that DTR."
+            "Each boxplot represents all simulated estimated mean PANSS scores for a given
+            DTR. Each red dot indicates the true mean PANSS score under that DTR."
           ),
-          h4("Metrics"),
-          p(
-            tags$div( # HTML bulleted list
-              tags$ul(
-                tags$li(em("Bias:"), "Mean(Estimated DTR Mean - True DTR Mean)"),
-                tags$li(em("SE:"), "SD(Estimated DTR Mean)"),
-                tags$li(em("MSE:"), "Mean([Estimated DTR Mean - True DTR Mean]",
-                        tags$sup("2", .noWS = "outside"), ")"),
-                tags$li(em("Coverage Probability:"), "Proportion of simulations where the
-            95% confidence interval contained the true DTR mean")
-              )
-            )
-          ),
-          h4("Treatment Regimes"),
           p("All treatment regimes are expressed as the initial treatment 
-            followed by the treatment to which non-responders will change."),
+            followed by the treatment non-responders will receive."),
+          h3("Abbreviations"),
+          h4("Treatment Regimes"),
           p(
             tags$div( # HTML bulleted list
               tags$ul(
@@ -222,7 +216,27 @@ ui <- fluidPage(
                 tags$li(em("Q,Typ:"), "Quetiapine, Typical Antipsychotic")
                 )
               )
+            ),
+          h4("Metrics"),
+          p(
+            tags$div( # HTML bulleted list
+              tags$ul(
+                tags$li(em("Bias:"), "Mean(Estimated DTR Mean - True DTR Mean)"),
+                tags$li(em("SE:"), "SD(Estimated DTR Mean)"),
+                tags$li(em("MSE:"), "Mean([Estimated DTR Mean - True DTR Mean]",
+                        tags$sup("2", .noWS = "outside"), ")")
+              )
             )
+          ),
+          h4("Methods"),
+          p(
+            tags$div( # HTML bulleted list
+              tags$ul(
+                tags$li(em("MI:"), "Multiple Imputation as proposed in Shortreed et al. (2014)."),
+                tags$li(em("CC:"), "Complete Case analysis")
+              )
+            )
+          )
           )
         )
       )
@@ -302,49 +316,49 @@ server <- function(input, output) {
 
 
       # Compute summary measures -----------------------------------------------
+      # Using MI
       dtr_means <- sim.res[1:7]
       dtr_coverage <- sim.res[8:14]
 
+      # Using CC
+      dtr_means_cc <- sim.res[15:21]
+      dtr_coverage_cc <- sim.res[22:28]
+      
       dtr_names <- c("O,R", "O,Typ", "R,O", "R,Typ", "Q,O", "Q,R", "Q,Typ")
       colnames(dtr_means) <- dtr_names
       colnames(dtr_coverage) <- dtr_names
+      colnames(dtr_means_cc) <- dtr_names
+      colnames(dtr_coverage_cc) <- dtr_names
       names(true.means) <- dtr_names
-
-
 
       # Metrics send to user
       bias <- colMeans(dtr_means) - true.means
       se <- sapply(dtr_means, sd)
       mse <- bias^2 + se^2
       cov.probability <- colMeans(dtr_coverage)
-
-      # Plot DTR means ---------------------------------------------------------
+      
+      bias_cc <- colMeans(dtr_means_cc) - true.means
+      se_cc <- sapply(dtr_means_cc, sd)
+      mse_cc <- bias_cc^2 + se_cc^2
+      cov.probability_cc <- colMeans(dtr_coverage_cc)
+      
       # Create long data where each row is the sample DTR mean PANSS score for
       # a given DTR on a given simulation
-      plot.df <- dtr_means %>%
-        pivot_longer(
-          cols = everything(), names_to = "Regime",
-          values_to = "reg.means"
-        )
-
-      annotate.df <- tibble(Regime = names(true.means), reg.means = true.means)
-
-      plot <- ggplot(plot.df, aes(x = Regime, y = reg.means, fill = Regime)) +
-        geom_boxplot() +
-        labs(
-          y = "Expected PANSS score", x = "Embedded DTR",
-          title = "Comparing embedded DTRs"
-        )
-
-      # Add the true means to the plot (red dots)
-      plot <-
-        plot +
-        geom_point(
-          data = annotate.df, aes(x = Regime, y = reg.means),
-          color = "red", size = 3
-        ) +
-        theme(legend.position = "none")
+      plot.df <- 
+        bind_rows(
+          dtr_means %>% 
+            pivot_longer(cols = everything(), names_to = "Regime",
+                         values_to = "reg.means") %>% 
+            mutate(Method = "MI"),
+          dtr_means_cc %>% 
+            pivot_longer(cols = everything(), names_to = "Regime",
+                         values_to = "reg.means") %>% 
+            mutate(Method = "CC")
+        ) %>% 
+        mutate(Method = fct_inorder(Method),
+               Regime = fct_inorder(Regime))
       
+      annotate.df <- tibble(Regime = names(true.means), reg.means = true.means)
 
       # Return all results in a list -------------------------------------------
       list(
@@ -352,7 +366,12 @@ server <- function(input, output) {
         se = se,
         mse = mse,
         cov.probability = cov.probability,
-        plot = plot,
+        bias_cc = bias_cc,
+        se_cc = se_cc,
+        mse_cc = mse_cc,
+        cov.probability_cc = cov.probability_cc,
+        plot.df = plot.df,
+        annotate.df = annotate.df,
         time = run_time,
         # Include user input in return of re() so that these reported values on siminfo match
         # the simulation that is currently displayed (and not what the user currently has entered)
@@ -366,13 +385,58 @@ server <- function(input, output) {
   )
 
   output$plot <- renderPlot(
-    re()$plot
+    expr = {
+      if (input$cc) {
+        plot <- ggplot(re()$plot.df) +
+          geom_boxplot(mapping = aes(x = Regime, y = reg.means, fill = Method)) +
+          labs(
+            y = "Expected PANSS score", x = "Embedded DTR",
+            title = "Comparing embedded DTRs"
+          ) +
+          geom_point(
+            data = annotate.df, aes(x = Regime, y = reg.means),
+            color = "red", size = 3
+          )
+      } else {
+        plot <- filter(re()$plot.df, Method == "MI") %>%  
+          ggplot() +
+          geom_boxplot(mapping = aes(x = Regime, y = reg.means, fill = Method)) +
+          labs(
+            y = "Expected PANSS score", x = "Embedded DTR",
+            title = "Comparing embedded DTRs"
+          ) +
+          geom_point(
+            data = annotate.df, aes(x = Regime, y = reg.means),
+            color = "red", size = 3
+          ) +
+          theme(legend.position = "none")
+      }
+      
+      plot
+    }
   )
 
   output$table1 <- renderTable(
     expr = {
-      rbind(re()$bias, re()$se, re()$mse, re()$cov.probability) %>%
-        `rownames<-`(c("Bias", "SE", "MSE", "Coverage Probability"))
+      if (input$cc) {
+        tab <- rbind(
+          re()$bias,
+          re()$se,
+          re()$mse,
+          re()$bias_cc,
+          re()$se_cc,
+          re()$mse_cc
+        )
+        rownames(tab) <- c("Bias (MI)", "SE (MI)", "MSE (MI)",
+                           "Bias (CC)", "SE (CC)", "MSE (CC)")
+      
+      } else {
+        tab <- rbind(re()$bias, re()$se, re()$mse)
+        rownames(tab) <- c("Bias", "SE", "MSE")
+      }
+
+      tab
+      
     },
     striped = TRUE,
     hover = TRUE,
