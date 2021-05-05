@@ -75,7 +75,7 @@ ui <- fluidPage(
       p(
         "You can use between 2 and",
         maxcores,
-        "cores (maximum available cores - 1)."
+        "cores (maximum available cores)."
       ),
       p(
         strong("Warning:"),
