@@ -118,9 +118,9 @@ ui <- fluidPage(
              affect an analysis in a SMART setting."
           ),
           p(
-            "This Shiny application aims to evaluate the performance of MI under
-             various randomness mechanisms
-             and levels of missingness."
+            "This Shiny application aims to evaluate the performance of MI 
+             in relation to a complete case analysis under various 
+             missingness mechanisms and levels of missingness."
           ),
           h3("Methods"),
           p(
@@ -130,7 +130,7 @@ ui <- fluidPage(
              (CATIE) SMART study for patients with Schizophrenia."
           ),
           p(
-            "In this study Subjects were randomized to three possible first line
+            "In this study, subjects were randomized to three possible first line
              treatments: Olanzapine, Risperidone, and Quetiapine (second
              generation or atypical antipyshcotics). For the second treatment
              stage, responders will remain on their first line treatment and
@@ -178,7 +178,6 @@ ui <- fluidPage(
                 tags$li("vary the sample size"),
                 tags$li("control which metrics are reported and which are hidden"),
                 tags$li("select missingness percentages other than 30/60%"),
-                tags$li("see the results of a complete case analysis for comparison"),
                 tags$li("input multiple lists of paramaters and compare between settings")
               )
             )
