@@ -434,7 +434,9 @@ main <- function(sims, pct_mis, mis_mech, samp_size, true.dat) {
 #   aes(x = Regime, y = reg.means, fill = Regime) +
 #   geom_boxplot(shape = "circle") +
 #   scale_fill_hue(direction = 1) +
-#   facet_wrap(vars(analysis), ncol = 2L)
+#   facet_wrap(vars(analysis), ncol = 2L) +
+#      labs(y = "Expected PANSS score", x="Embedded DTR",
+#          title="Comparing embedded DTRs")
 # 
 # #Add the true means to the plot (red dots)
 # plot +
