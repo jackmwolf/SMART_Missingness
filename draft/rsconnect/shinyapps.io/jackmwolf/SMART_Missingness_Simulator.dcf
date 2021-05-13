@@ -5,9 +5,9 @@ account: jackmwolf
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
 appId: 4030250
-bundleId: 4561863
+bundleId: 4596065
 url: https://jackmwolf.shinyapps.io/SMART_Missingness_Simulator/
-when: 1620242873.63914
-lastSyncTime: 1620242873.63914
+when: 1620944226.57984
+lastSyncTime: 1620944226.57984
 asMultiple: FALSE
 asStatic: FALSE

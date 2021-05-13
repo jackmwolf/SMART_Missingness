@@ -394,7 +394,7 @@ server <- function(input, output) {
             title = "Comparing embedded DTRs"
           ) +
           geom_point(
-            data = annotate.df, aes(x = Regime, y = reg.means),
+            data = re()$annotate.df, aes(x = Regime, y = reg.means),
             color = "red", size = 3
           )
       } else {
@@ -406,7 +406,7 @@ server <- function(input, output) {
             title = "Comparing embedded DTRs"
           ) +
           geom_point(
-            data = annotate.df, aes(x = Regime, y = reg.means),
+            data = re()$annotate.df, aes(x = Regime, y = reg.means),
             color = "red", size = 3
           ) +
           theme(legend.position = "none")
